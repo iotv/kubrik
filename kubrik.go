@@ -9,27 +9,45 @@ import (
 	"github.com/urfave/negroni"
 )
 
+type pwLoginRequest struct {
+	Username *string `json:"username,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Password *string `json:"password,omitempty"`
+}
+
+type errorStruct struct {
+	Error  string    `json:"error"`
+	Fields *[]string `json:"fields,omitempty"`
+}
+
+type errorResponse struct {
+	HttpStatus int           `json:"httpStatus"`
+	Message    string        `json:"message"`
+	Errors     []errorStruct `json:"errors"`
+}
+
 func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	decoder := json.NewDecoder(r.Body)
-	var v interface{}
+	encoder := json.NewEncoder(w)
 
-	if err := decoder.Decode(&v); err != nil {
-		fmt.Fprintf(w, "Error")
+	var req pwLoginRequest
+
+	if err := decoder.Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json; utf-8")
+		w.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(&errorResponse{
+			HttpStatus: 400,
+			Message:    "Bad request",
+			Errors: []errorStruct{
+				{
+					Error:  "Malformed JSON",
+					Fields: &[]string{"body"},
+				},
+			},
+		})
 		return
 	}
-
-	switch v := v.(type) {
-	case map[string]interface{}:
-		_, oku := v["username"]
-		_, okp := v["password"]
-		if oku && okp {
-			fmt.Fprintf(w, "tokenz")
-		} else {
-			fmt.Fprintf(w, "Missing keys")
-		}
-	default:
-		fmt.Fprintf(w, "Unrecognized")
-	}
+	fmt.Fprintf(w, "Token")
 }
 
 func main() {
