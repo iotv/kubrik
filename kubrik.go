@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,7 +10,26 @@ import (
 )
 
 func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprintf(w, "Hello")
+	decoder := json.NewDecoder(r.Body)
+	var v interface{}
+
+	if err := decoder.Decode(&v); err != nil {
+		fmt.Fprintf(w, "Error")
+		return
+	}
+
+	switch v := v.(type) {
+	case map[string]interface{}:
+		_, oku := v["username"]
+		_, okp := v["password"]
+		if oku && okp {
+			fmt.Fprintf(w, "tokenz")
+		} else {
+			fmt.Fprintf(w, "Missing keys")
+		}
+	default:
+		fmt.Fprintf(w, "Unrecognized")
+	}
 }
 
 func main() {
