@@ -1,8 +1,8 @@
 FROM golang:1.7
 
-WORKDIR /opt
-COPY ./ /opt/
+WORKDIR /go
+COPY ./ /go/src/github.com/mg4tv/kubrik
 
-RUN go build
+RUN go build github.com/mg4tv/kubrik
 
 ENTRYPOINT ./kubrik
