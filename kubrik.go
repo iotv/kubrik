@@ -11,9 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 type errorStruct struct {
-	Error  string    `json:"error"`
+	Error  string   `json:"error"`
 	Fields []string `json:"fields"`
 }
 
@@ -24,8 +23,8 @@ type errorResponse struct {
 }
 
 type tokenResponse struct {
-	Token      string `json:"token"`
-	Header     string `json:"header"`
+	Token  string `json:"token"`
+	Header string `json:"header"`
 }
 
 func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -57,7 +56,7 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !(uexist || eexist) {
 		valid = false
 		eStructs = append(eStructs, errorStruct{
-			Error: "Request must have either an email or username",
+			Error:  "Request must have either an email or username",
 			Fields: []string{"username", "email"},
 		})
 	}
@@ -65,7 +64,7 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !pexist {
 		valid = false
 		eStructs = append(eStructs, errorStruct{
-			Error: "Request must have a password",
+			Error:  "Request must have a password",
 			Fields: []string{"password"},
 		})
 	}
@@ -73,7 +72,7 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if pexist && !pIsString {
 		valid = false
 		eStructs = append(eStructs, errorStruct{
-			Error: "Password value must be a JSON string",
+			Error:  "Password value must be a JSON string",
 			Fields: []string{"password"},
 		})
 	}
@@ -97,9 +96,9 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		encoder.Encode(&errorResponse{
 			HttpStatus: http.StatusUnauthorized,
 			Message:    "Unauthorized",
-			Errors:     []errorStruct{
+			Errors: []errorStruct{
 				{
-					Error: "Invalid Login/Password combination",
+					Error:  "Invalid Login/Password combination",
 					Fields: []string{"password", "email", "username"},
 				},
 			},
@@ -115,7 +114,7 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	encoder.Encode(&tokenResponse{
-		Token: string(tokenString),
+		Token:  string(tokenString),
 		Header: "Bearer: " + string(tokenString),
 	})
 }
