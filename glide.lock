@@ -1,8 +1,17 @@
 hash: 866e28c3cb0c8e074e79f5faef88f3f4eeca305037b01a1c0fc0485416c9c1a7
-updated: 2016-12-11T22:09:04.29402374-05:00
+updated: 2016-12-12T19:23:11.093637899-05:00
 imports:
+- name: github.com/dgrijalva/jwt-go
+  version: 9ed569b5d1ac936e6494082958d63a6aa4fff99a
 - name: github.com/julienschmidt/httprouter
   version: 5dd70ee059943e81987a817fa1a755b11dd119c1
+- name: github.com/satori/go.uuid
+  version: b061729afc07e77a8aa4fad0a2fd840958f1942a
 - name: github.com/urfave/negroni
   version: fde5e16d32adc7ad637e9cd9ad21d4ebc6192535
+- name: golang.org/x/crypto
+  version: 9a6f0a01987842989747adff311d80750ba25530
+  subpackages:
+  - bcrypt
+  - blowfish
 testImports: []
