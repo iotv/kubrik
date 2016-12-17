@@ -1,10 +1,14 @@
 hash: 866e28c3cb0c8e074e79f5faef88f3f4eeca305037b01a1c0fc0485416c9c1a7
-updated: 2016-12-12T19:23:11.093637899-05:00
+updated: 2016-12-17T01:29:38.148961697-05:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 9ed569b5d1ac936e6494082958d63a6aa4fff99a
 - name: github.com/julienschmidt/httprouter
   version: 5dd70ee059943e81987a817fa1a755b11dd119c1
+- name: github.com/rs/cors
+  version: a62a804a8a009876ca59105f7899938a1349f4b3
+- name: github.com/rs/xhandler
+  version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
 - name: github.com/satori/go.uuid
   version: b061729afc07e77a8aa4fad0a2fd840958f1942a
 - name: github.com/urfave/negroni
@@ -14,4 +18,8 @@ imports:
   subpackages:
   - bcrypt
   - blowfish
+- name: golang.org/x/net
+  version: 45e771701b814666a7eb299e6c7a57d0b1799e91
+  subpackages:
+  - context
 testImports: []
