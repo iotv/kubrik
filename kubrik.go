@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 	"github.com/satori/go.uuid"
 	"github.com/urfave/negroni"
 	"golang.org/x/crypto/bcrypt"
@@ -120,9 +121,11 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func main() {
+	corsMiddleware := cors.Default()
 	router := httprouter.New()
 	router.POST("/users/login", login)
 	n := negroni.Classic()
+	n.Use(corsMiddleware)
 	n.UseHandler(router)
 	n.Run(":8080")
 }
