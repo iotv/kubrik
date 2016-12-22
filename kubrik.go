@@ -15,6 +15,11 @@ import (
 
 var pgPool *pgx.ConnPool
 
+type UserResponse struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}
+
 type errorStruct struct {
 	Error  string   `json:"error"`
 	Fields []string `json:"fields"`
@@ -29,6 +34,33 @@ type errorResponse struct {
 type tokenResponse struct {
 	Token  string `json:"token"`
 	Header string `json:"header"`
+}
+
+func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+}
+
+func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	encoder := json.NewEncoder(w)
+
+	pgConn, _ := pgPool.Acquire()
+	defer pgPool.Release(pgConn)
+
+	users := []UserResponse{}
+	rows, _ := pgConn.Query("select * from users")
+	for rows.Next() {
+		var id string
+		var username string
+		var email string
+		var encrypted_password []byte
+		rows.Scan(&id, &username, &email, &encrypted_password)
+		users = append(users, UserResponse{
+			Username: username,
+			Email: email,
+		})
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	encoder.Encode(&users)
 }
 
 func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -124,9 +156,19 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func main() {
+	pgPool, _ = pgx.NewConnPool(pgx.ConnPoolConfig{
+		ConnConfig: pgx.ConnConfig{
+			Host: "db",
+			User: "postgres",
+			Password: "postgres",
+			Database: "mg4",
+		},
+	})
 	corsMiddleware := cors.Default()
 	router := httprouter.New()
-	router.POST("/users/login", login)
+	router.POST("/auth/login", login)
+	router.POST("/users", createUser)
+	router.GET("/users", listUsers)
 	n := negroni.Classic()
 	n.Use(corsMiddleware)
 	n.UseHandler(router)
