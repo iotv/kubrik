@@ -23,7 +23,7 @@ services:
         - no_proxy
         - NO_PROXY
     ports:
-      - "4000:4000"
+      - "8080:8080"
     depends_on:
       - db
     volumes:
