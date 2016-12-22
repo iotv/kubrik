@@ -1,8 +1,10 @@
 hash: 866e28c3cb0c8e074e79f5faef88f3f4eeca305037b01a1c0fc0485416c9c1a7
-updated: 2016-12-17T01:29:38.148961697-05:00
+updated: 2016-12-22T12:52:28.824216454-05:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 9ed569b5d1ac936e6494082958d63a6aa4fff99a
+- name: github.com/jackc/pgx
+  version: e96c105b55d469fddef56bfa7db5ecc7ab31d7b2
 - name: github.com/julienschmidt/httprouter
   version: 5dd70ee059943e81987a817fa1a755b11dd119c1
 - name: github.com/rs/cors

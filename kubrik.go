@@ -5,12 +5,15 @@ import (
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/jackc/pgx"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 	"github.com/satori/go.uuid"
 	"github.com/urfave/negroni"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var pgPool *pgx.ConnPool
 
 type errorStruct struct {
 	Error  string   `json:"error"`
