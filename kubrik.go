@@ -11,6 +11,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/urfave/negroni"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/mg4tv/kubrik/api"
 )
 
 var pgPool *pgx.ConnPool
@@ -19,13 +20,6 @@ type userResponse struct {
 	Id       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
-}
-
-type createUserRequest struct {
-	Username             string `json:"username"`
-	Email                string `json:"email"`
-	Password             string `json:"password"`
-	PasswordConfirmation string `json:"password_confirmation"`
 }
 
 type errorStruct struct {
@@ -44,43 +38,6 @@ type tokenResponse struct {
 	Header string `json:"header"`
 }
 
-func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	decoder := json.NewDecoder(r.Body)
-	encoder := json.NewEncoder(w)
-
-	var req createUserRequest
-
-	pgConn, _ := pgPool.Acquire()
-	defer pgPool.Release(pgConn)
-	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
-	if err := decoder.Decode(&req); err != nil {
-		return
-	} else {
-		if _, err := pgConn.Exec("insert into users(username, email, encrypted_password) values($1, $2, $3)", req.Username, req.Email, hash); err != nil {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusBadRequest)
-			encoder.Encode(&errorResponse{
-				HttpStatus: http.StatusBadRequest,
-				Message: "Broken",
-				Errors: []errorStruct{
-					{
-						Error: err.Error(),
-						Fields: []string{"body"},
-					},
-				},
-			})
-		} else {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			encoder.Encode(&userResponse{
-				Username: req.Username,
-				Email: req.Password,
-			})
-		}
-		return
-	}
-}
-
 func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	encoder := json.NewEncoder(w)
 
@@ -97,7 +54,7 @@ func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		rows.Scan(&id, &username, &email, &encrypted_password)
 		users = append(users, userResponse{
 			Username: username,
-			Email: email,
+			Email:    email,
 		})
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -200,8 +157,8 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func main() {
 	pgPool, _ = pgx.NewConnPool(pgx.ConnPoolConfig{
 		ConnConfig: pgx.ConnConfig{
-			Host: "db",
-			User: "postgres",
+			Host:     "db",
+			User:     "postgres",
 			Password: "postgres",
 			Database: "mg4",
 		},
@@ -209,8 +166,7 @@ func main() {
 	corsMiddleware := cors.Default()
 	router := httprouter.New()
 	router.POST("/auth/login", login)
-	router.POST("/users", createUser)
-	router.GET("/users", listUsers)
+	api.RouteUser(router)
 	n := negroni.Classic()
 	n.Use(corsMiddleware)
 	n.UseHandler(router)
