@@ -15,9 +15,17 @@ import (
 
 var pgPool *pgx.ConnPool
 
-type UserResponse struct {
+type userResponse struct {
+	Id       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
+}
+
+type createUserRequest struct {
+	Username             string `json:"username"`
+	Email                string `json:"email"`
+	Password             string `json:"password"`
+	PasswordConfirmation string `json:"password_confirmation"`
 }
 
 type errorStruct struct {
@@ -37,6 +45,40 @@ type tokenResponse struct {
 }
 
 func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	decoder := json.NewDecoder(r.Body)
+	encoder := json.NewEncoder(w)
+
+	var req createUserRequest
+
+	pgConn, _ := pgPool.Acquire()
+	defer pgPool.Release(pgConn)
+	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	if err := decoder.Decode(&req); err != nil {
+		return
+	} else {
+		if _, err := pgConn.Exec("insert into users(username, email, encrypted_password) values($1, $2, $3)", req.Username, req.Email, hash); err != nil {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusBadRequest)
+			encoder.Encode(&errorResponse{
+				HttpStatus: http.StatusBadRequest,
+				Message: "Broken",
+				Errors: []errorStruct{
+					{
+						Error: err.Error(),
+						Fields: []string{"body"},
+					},
+				},
+			})
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			encoder.Encode(&userResponse{
+				Username: req.Username,
+				Email: req.Password,
+			})
+		}
+		return
+	}
 }
 
 func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -45,7 +87,7 @@ func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pgConn, _ := pgPool.Acquire()
 	defer pgPool.Release(pgConn)
 
-	users := []UserResponse{}
+	users := []userResponse{}
 	rows, _ := pgConn.Query("select * from users")
 	for rows.Next() {
 		var id string
@@ -53,7 +95,7 @@ func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		var email string
 		var encrypted_password []byte
 		rows.Scan(&id, &username, &email, &encrypted_password)
-		users = append(users, UserResponse{
+		users = append(users, userResponse{
 			Username: username,
 			Email: email,
 		})
