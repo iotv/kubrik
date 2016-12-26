@@ -23,7 +23,7 @@ type userRequest struct {
 	PasswordConfirmation *string `json:"passwordConfirmation"`
 }
 
-func validateUser(u userRequest, act string) *errorStruct {
+func validateUser(u userRequest, act string) *[]errorStruct {
 	vErrs := []errorStruct{}
 	valid := true
 	if u.Id == nil && act != "create" {
@@ -81,26 +81,30 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var err error
 
 	if err = decoder.Decode(&req); err != nil {
-		//FIXME: send 400
+		write400(w)
 		return
 	}
 
 	if vErrs := validateUser(req, "create"); vErrs != nil {
-		//FIXME: send 422
+		write422(w, *vErrs)
 		return
 	}
-	hash, _ := bcrypt.GenerateFromPassword([]byte(*req.Password), 10) // TODO: send 500 if fail
+	hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), 10)
+	if err != nil {
+		write500(w)
+		return
+	}
 	newUser, err := db.CreateUser(db.UserModel{
 		Username:          *req.Username,
 		Email:             *req.Email,
 		EncryptedPassword: hash,
 	})
 	if err != nil {
-		//FIXME: send 500
+		write500(w)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	addContentTypeJSONHeader(w)
 	w.WriteHeader(http.StatusOK)
 	encoder.Encode(&userResponse{
 		Id:       newUser.Id,
@@ -112,7 +116,7 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func deleteUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 }
 
-func listUsers(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func partiallyUpdateUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {

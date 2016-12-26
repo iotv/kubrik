@@ -13,6 +13,17 @@ type UserModel struct {
 
 var PgPool *pgx.ConnPool
 
+func init() {
+	PgPool, _ = pgx.NewConnPool(pgx.ConnPoolConfig{
+		ConnConfig: pgx.ConnConfig{
+			Host:     "db",
+			User:     "postgres",
+			Password: "postgres",
+			Database: "mg4",
+		},
+	})
+}
+
 func CreateUser(u UserModel) (*UserModel, error) {
 	const qsIns = "INSERT INTO users(username, email, encrypted_password) VALUES($1, $2, $3)"
 	const qsSel = "SELECT * FROM users WHERE username=$1 AND email=$2"
@@ -52,19 +63,19 @@ func CreateUser(u UserModel) (*UserModel, error) {
 
 func DeleteUser(id string) error {
 	const qs = "DELETE FROM users WHERE id=$1"
-  var err error
+	var err error
 
-  // Get a connection from the pool and set it up to release
-  conn, err := PgPool.Acquire()
-  if err != nil {
-    return err
-  }
-  defer PgPool.Release(conn)
+	// Get a connection from the pool and set it up to release
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return err
+	}
+	defer PgPool.Release(conn)
 
-  // Attempt to delete the user by id
-  if _, err = conn.Exec(qs, id); err != nil {
-    return err
-  }
+	// Attempt to delete the user by id
+	if _, err = conn.Exec(qs, id); err != nil {
+		return err
+	}
 	return nil
 }
 

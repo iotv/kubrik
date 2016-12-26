@@ -1,8 +1,10 @@
-hash: 866e28c3cb0c8e074e79f5faef88f3f4eeca305037b01a1c0fc0485416c9c1a7
-updated: 2016-12-22T12:52:28.824216454-05:00
+hash: e666d062c6bd99d8790414b14321846b08d8774e013e8cb9358172709dcb826e
+updated: 2016-12-25T16:45:50.390938837-05:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 9ed569b5d1ac936e6494082958d63a6aa4fff99a
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/jackc/pgx
   version: e96c105b55d469fddef56bfa7db5ecc7ab31d7b2
 - name: github.com/julienschmidt/httprouter
@@ -13,6 +15,10 @@ imports:
   version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
 - name: github.com/satori/go.uuid
   version: b061729afc07e77a8aa4fad0a2fd840958f1942a
+- name: github.com/spf13/cobra
+  version: de09d9ce07d0d8a74442cfeaa91628cf9492cc23
+- name: github.com/spf13/pflag
+  version: 25f8b5b07aece3207895bf19f7ab517eb3b22a40
 - name: github.com/urfave/negroni
   version: fde5e16d32adc7ad637e9cd9ad21d4ebc6192535
 - name: golang.org/x/crypto
