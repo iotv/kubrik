@@ -38,6 +38,21 @@ func write403(w http.ResponseWriter) {
 }
 
 func write404(w http.ResponseWriter) {
+	encoder := json.NewEncoder(w)
+	addContentTypeJSONHeader(w)
+	w.WriteHeader(http.StatusNotFound)
+	encoder.Encode(errorResponse{
+		HttpStatus: http.StatusNotFound,
+		Message: "Resource not found",
+		Errors: []errorStruct{
+			{
+				Error: "Id does not exist",
+				Fields: []string{
+					"id",
+				},
+			},
+		},
+	})
 }
 
 func write415(w http.ResponseWriter) {

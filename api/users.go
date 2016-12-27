@@ -115,16 +115,16 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	})
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func deleteUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 }
 
-func listUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func listUsers(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 }
 
-func partiallyUpdateUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func partiallyUpdateUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 }
 
-func showUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func showUser(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
 	encoder := json.NewEncoder(w)
 	rawID := p.ByName("id")
 	if _, err := uuid.FromString(rawID); err != nil {
@@ -150,7 +150,33 @@ func showUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	})
 }
 
-func updateUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func showUserByUsername(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
+	encoder := json.NewEncoder(w)
+	rawUsername := p.ByName("username")
+	if _, err := uuid.FromString(rawUsername); err != nil {
+		write400(w)
+		return
+	}
+
+	user, err := db.GetUserByUsername(rawUsername)
+	if err == pgx.ErrNoRows {
+		write404(w)
+		return
+	} else if err != nil {
+		write500(w)
+		return
+	}
+
+	addContentTypeJSONHeader(w)
+	w.WriteHeader(http.StatusOK)
+	encoder.Encode(&userResponse{
+		Id:       user.Id,
+		Username: user.Username,
+		Email:    user.Email,
+	})
+}
+
+func updateUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 }
 
 func RouteUser(router *httprouter.Router) {
@@ -162,5 +188,5 @@ func RouteUser(router *httprouter.Router) {
 	router.PATCH("/users/:id", partiallyUpdateUser)
 	router.PUT("/users/:id", updateUser)
 
-	router.GET("/users/byUsername/:username", showUser)
+	router.GET("/users/byUsername/:username", showUserByUsername)
 }
