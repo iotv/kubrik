@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/mg4tv/kubrik/db"
+	"github.com/satori/go.uuid"
+	"github.com/jackc/pgx"
 )
 
 type userResponse struct {
@@ -123,6 +125,29 @@ func partiallyUpdateUser(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 }
 
 func showUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	encoder := json.NewEncoder(w)
+	rawID := p.ByName("id")
+	if _, err := uuid.FromString(rawID); err != nil {
+		write400(w)
+		return
+	}
+
+	user, err := db.GetUserById(rawID)
+	if err == pgx.ErrNoRows {
+		write404(w)
+		return
+	} else if err != nil {
+		write500(w)
+		return
+	}
+
+	addContentTypeJSONHeader(w)
+	w.WriteHeader(http.StatusOK)
+	encoder.Encode(&userResponse{
+		Id:       user.Id,
+		Username: user.Username,
+		Email:    user.Email,
+	})
 }
 
 func updateUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -136,4 +161,6 @@ func RouteUser(router *httprouter.Router) {
 	router.GET("/users/:id", showUser)
 	router.PATCH("/users/:id", partiallyUpdateUser)
 	router.PUT("/users/:id", updateUser)
+
+	router.GET("/users/byUsername/:username", showUser)
 }

@@ -26,7 +26,7 @@ func init() {
 
 func CreateUser(u UserModel) (*UserModel, error) {
 	const qsIns = "INSERT INTO users(username, email, encrypted_password) VALUES($1, $2, $3)"
-	const qsSel = "SELECT * FROM users WHERE username=$1 AND email=$2"
+	const qsSel = "SELECT id FROM users WHERE username=$1 AND email=$2"
 	var err error
 
 	// Get a connection from the pool and set it up to release
@@ -50,11 +50,11 @@ func CreateUser(u UserModel) (*UserModel, error) {
 
 	// Attempt to find the new user's id by username and email
 	row := tx.QueryRow(qsSel, u.Username, u.Email)
-	var Id string
-	if err = row.Scan(&Id); err != nil {
+	var id string
+	if err = row.Scan(&id); err != nil {
 		return nil, err
 	}
-	u.Id = Id
+	u.Id = id
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -86,8 +86,27 @@ func ListUsers(ids []string) (*[]UserModel, error) {
 }
 
 func GetUserById(id string) (*UserModel, error) {
-	const qs = "SELECT * FROM users WHERE id=$1"
-	return nil, nil
+	const qs = "SELECT username, email, encrypted_password FROM users WHERE id=$1"
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer PgPool.Release(conn)
+
+	var username string
+	var email string
+	var encrypted_password []byte
+	row := conn.QueryRow(qs, id)
+	err = row.Scan(&username, &email, &encrypted_password)
+	if err != nil {
+		return nil, err
+	}
+	return &UserModel{
+		Id: id,
+		Username: username,
+		Email: email,
+		EncryptedPassword: encrypted_password,
+	}, nil
 }
 
 func GetUserByEmail(email string) (*UserModel, error) {
