@@ -62,14 +62,6 @@ func (p *printer) collectComments(node ast.Node) {
 	ast.Walk(node, func(nn ast.Node) (ast.Node, bool) {
 		switch t := nn.(type) {
 		case *ast.LiteralType:
-			if t.LeadComment != nil {
-				for _, comment := range t.LeadComment.List {
-					if _, ok := standaloneComments[comment.Pos()]; ok {
-						delete(standaloneComments, comment.Pos())
-					}
-				}
-			}
-
 			if t.LineComment != nil {
 				for _, comment := range t.LineComment.List {
 					if _, ok := standaloneComments[comment.Pos()]; ok {
@@ -103,6 +95,7 @@ func (p *printer) collectComments(node ast.Node) {
 	}
 
 	sort.Sort(ByPosition(p.standaloneComments))
+
 }
 
 // output prints creates b printable HCL output and returns it.
@@ -111,57 +104,34 @@ func (p *printer) output(n interface{}) []byte {
 
 	switch t := n.(type) {
 	case *ast.File:
-		// File doesn't trace so we add the tracing here
-		defer un(trace(p, "File"))
 		return p.output(t.Node)
 	case *ast.ObjectList:
-		defer un(trace(p, "ObjectList"))
-
 		var index int
+		var nextItem token.Pos
+		var commented bool
 		for {
-			// Determine the location of the next actual non-comment
-			// item. If we're at the end, the next item is at "infinity"
-			var nextItem token.Pos
-			if index != len(t.Items) {
-				nextItem = t.Items[index].Pos()
-			} else {
-				nextItem = token.Pos{Offset: infinity, Line: infinity}
-			}
-
-			// Go through the standalone comments in the file and print out
-			// the comments that we should be for this object item.
+			// TODO(arslan): refactor below comment printing, we have the same in objectType
 			for _, c := range p.standaloneComments {
-				// Go through all the comments in the group. The group
-				// should be printed together, not separated by double newlines.
-				printed := false
 				for _, comment := range c.List {
-					// We only care about comments after the previous item
-					// we've printed so that comments are printed in the
-					// correct locations (between two objects for example).
-					// And before the next item.
+					if index != len(t.Items) {
+						nextItem = t.Items[index].Pos()
+					} else {
+						nextItem = token.Pos{Offset: infinity, Line: infinity}
+					}
+
 					if comment.Pos().After(p.prev) && comment.Pos().Before(nextItem) {
 						// if we hit the end add newlines so we can print the comment
-						// we don't do this if prev is invalid which means the
-						// beginning of the file since the first comment should
-						// be at the first line.
-						if p.prev.IsValid() && index == len(t.Items) {
+						if index == len(t.Items) {
 							buf.Write([]byte{newline, newline})
 						}
 
-						// Write the actual comment.
 						buf.WriteString(comment.Text)
+
 						buf.WriteByte(newline)
-
-						// Set printed to true to note that we printed something
-						printed = true
+						if index != len(t.Items) {
+							buf.WriteByte(newline)
+						}
 					}
-				}
-
-				// If we're not at the last item, write a new line so
-				// that there is a newline separating this comment from
-				// the next object.
-				if printed && index != len(t.Items) {
-					buf.WriteByte(newline)
 				}
 			}
 
@@ -170,7 +140,7 @@ func (p *printer) output(n interface{}) []byte {
 			}
 
 			buf.Write(p.output(t.Items[index]))
-			if index != len(t.Items)-1 {
+			if !commented && index != len(t.Items)-1 {
 				buf.Write([]byte{newline, newline})
 			}
 			index++
@@ -195,8 +165,7 @@ func (p *printer) output(n interface{}) []byte {
 
 func (p *printer) literalType(lit *ast.LiteralType) []byte {
 	result := []byte(lit.Token.Text)
-	switch lit.Token.Type {
-	case token.HEREDOC:
+	if lit.Token.Type == token.HEREDOC {
 		// Clear the trailing newline from heredocs
 		if result[len(result)-1] == '\n' {
 			result = result[:len(result)-1]
@@ -204,12 +173,6 @@ func (p *printer) literalType(lit *ast.LiteralType) []byte {
 
 		// Poison lines 2+ so that we don't indent them
 		result = p.heredocIndent(result)
-	case token.STRING:
-		// If this is a multiline string, poison lines 2+ so we don't
-		// indent them.
-		if bytes.IndexRune(result, '\n') >= 0 {
-			result = p.heredocIndent(result)
-		}
 	}
 
 	return result
@@ -288,7 +251,7 @@ func (p *printer) objectType(o *ast.ObjectType) []byte {
 						buf.WriteByte(newline)
 					}
 
-					buf.Write(p.indent(p.heredocIndent([]byte(comment.Text))))
+					buf.Write(p.indent([]byte(comment.Text)))
 					buf.WriteByte(newline)
 					if index != len(o.List.Items) {
 						buf.WriteByte(newline) // do not print on the end
@@ -472,33 +435,11 @@ func (p *printer) list(l *ast.ListType) []byte {
 	}
 
 	insertSpaceBeforeItem := false
-	lastHadLeadComment := false
 	for i, item := range l.List {
 		if item.Pos().Line != l.Lbrack.Line {
 			// multiline list, add newline before we add each item
 			buf.WriteByte(newline)
 			insertSpaceBeforeItem = false
-
-			// If we have a lead comment, then we want to write that first
-			leadComment := false
-			if lit, ok := item.(*ast.LiteralType); ok && lit.LeadComment != nil {
-				leadComment = true
-
-				// If this isn't the first item and the previous element
-				// didn't have a lead comment, then we need to add an extra
-				// newline to properly space things out. If it did have a
-				// lead comment previously then this would be done
-				// automatically.
-				if i > 0 && !lastHadLeadComment {
-					buf.WriteByte(newline)
-				}
-
-				for _, comment := range lit.LeadComment.List {
-					buf.Write(p.indent([]byte(comment.Text)))
-					buf.WriteByte(newline)
-				}
-			}
-
 			// also indent each line
 			val := p.output(item)
 			curLen := len(val)
@@ -517,16 +458,9 @@ func (p *printer) list(l *ast.ListType) []byte {
 				}
 			}
 
-			lastItem := i == len(l.List)-1
-			if lastItem {
+			if i == len(l.List)-1 {
 				buf.WriteByte(newline)
 			}
-
-			if leadComment && !lastItem {
-				buf.WriteByte(newline)
-			}
-
-			lastHadLeadComment = leadComment
 		} else {
 			if insertSpaceBeforeItem {
 				buf.WriteByte(blank)
