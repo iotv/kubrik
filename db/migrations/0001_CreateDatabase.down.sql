@@ -1,4 +1,2 @@
-BEGIN;
 DROP TABLE IF EXISTS users;
 DROP EXTENSION "uuid-ossp";
-COMMIT;
