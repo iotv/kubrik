@@ -111,6 +111,7 @@ func convertGoogleToken(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 func RouteAuth(router *httprouter.Router) {
 	router.POST("/auth/login", login)
-	router.POST("/auth/fromFacebook", convertFacebookToken)
-	router.POST("/auth/fromGoogle", convertGoogleToken)
+	router.POST("/auth/facebookLogin", convertFacebookToken)
+	router.POST("/auth/googleLogin", convertGoogleToken)
+	router.POST("/auth/deauthFacebook", convertFacebookToken)
 }
