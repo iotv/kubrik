@@ -106,12 +106,15 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func convertFacebookToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
+func deauthFacebook(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+}
+
 func convertGoogleToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func RouteAuth(router *httprouter.Router) {
 	router.POST("/auth/login", login)
-	router.POST("/auth/facebookLogin", convertFacebookToken)
-	router.POST("/auth/googleLogin", convertGoogleToken)
-	router.POST("/auth/deauthFacebook", convertFacebookToken)
+	router.POST("/auth/facebook", convertFacebookToken)
+	router.POST("/auth/google", convertGoogleToken)
+	router.POST("/deauth/facebook", deauthFacebook)
 }
