@@ -183,10 +183,11 @@ func RouteUser(router *httprouter.Router) {
 	router.GET("/users", listUsers)
 	router.POST("/users", createUser)
 
+
 	router.DELETE("/users/:id", deleteUser)
-	router.GET("/users/:id", showUser)
+	router.GET("/users/byId/:id", showUser)
+	router.GET("/users/byUsername/:username", showUserByUsername)
 	router.PATCH("/users/:id", partiallyUpdateUser)
 	router.PUT("/users/:id", updateUser)
 
-	router.GET("/users/byUsername/:username", showUserByUsername)
 }

@@ -115,8 +115,27 @@ func GetUserByEmail(email string) (*UserModel, error) {
 }
 
 func GetUserByUsername(username string) (*UserModel, error) {
-	const qs = "SELECT * FROM users WHERE username=$1"
-	return nil, nil
+	const qs = "SELECT id, email, encrypted_password FROM users WHERE username=$1"
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer PgPool.Release(conn)
+
+	var id string
+	var email string
+	var encrypted_password []byte
+	row := conn.QueryRow(qs, username)
+	err = row.Scan(&id, &email, &encrypted_password)
+	if err != nil {
+		return nil, err
+	}
+	return &UserModel{
+		Id: id,
+		Username: username,
+		Email: email,
+		EncryptedPassword: encrypted_password,
+	}, nil
 }
 
 func UpdateUser(u UserModel) error {

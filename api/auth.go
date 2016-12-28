@@ -7,7 +7,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/satori/go.uuid"
+	"github.com/mg4tv/kubrik/db"
 )
+
+type tokenRequest struct {
+	Username *string `json:"username"`
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
+}
 
 type tokenResponse struct {
 	Token  string `json:"token"`
@@ -18,37 +25,34 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	decoder := json.NewDecoder(r.Body)
 	encoder := json.NewEncoder(w)
 
-	var req map[string]interface{}
+	var req tokenRequest
+	var err error
 
-	if err := decoder.Decode(&req); err != nil {
+	if err = decoder.Decode(&req); err != nil {
 		write400(w)
 		return
 	}
 
 	valid := true
 	var eStructs []errorStruct
-	_, uexist := req["username"]
-	_, eexist := req["email"]
-	if !(uexist || eexist) {
+	if req.Username == nil && req.Email == nil {
 		valid = false
 		eStructs = append(eStructs, errorStruct{
 			Error:  "Request must have either an email or username",
 			Fields: []string{"username", "email"},
 		})
+	} else if req.Username != nil && req.Email != nil {
+		valid = false
+		eStructs = append(eStructs, errorStruct{
+			Error:  "Request must have only an email or username, not both",
+			Fields: []string{"username", "email"},
+		})
 	}
-	p, pexist := req["password"]
-	if !pexist {
+
+	if req.Password == nil {
 		valid = false
 		eStructs = append(eStructs, errorStruct{
 			Error:  "Request must have a password",
-			Fields: []string{"password"},
-		})
-	}
-	password, pIsString := p.(string)
-	if pexist && !pIsString {
-		valid = false
-		eStructs = append(eStructs, errorStruct{
-			Error:  "Password value must be a JSON string",
 			Fields: []string{"password"},
 		})
 	}
@@ -58,9 +62,19 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	// Compare to itself. There's no database to check
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
-	if err := bcrypt.CompareHashAndPassword(hash, []byte(password)); err != nil {
+	var user *db.UserModel
+	if req.Username != nil {
+		user, err = db.GetUserByUsername(*req.Username)
+	} else {
+		user, err = db.GetUserByEmail(*req.Email)
+	}
+
+	if err != nil {
+		write404(w)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword(user.EncryptedPassword, []byte(*req.Password)); err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusUnauthorized)
 		encoder.Encode(&errorResponse{
