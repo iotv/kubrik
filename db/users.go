@@ -24,6 +24,10 @@ func init() {
 	})
 }
 
+
+// CreateUser takes a UserModel and writes it to the database.
+// If this write was successful, it returns a Usermodel as seen by the database and a nil error.
+// Otherwise, it returns a nil model and an errror
 func CreateUser(u UserModel) (*UserModel, error) {
 	const qsIns = "INSERT INTO users(username, email, encrypted_password) VALUES($1, $2, $3)"
 	const qsSel = "SELECT id FROM users WHERE username=$1 AND email=$2"
@@ -61,6 +65,10 @@ func CreateUser(u UserModel) (*UserModel, error) {
 	return &u, nil
 }
 
+
+// DeleteUser takes a user id and removes the row containing that user from the database/
+// If this delete was sucessful, it returns nil.
+// Otherwise it returns an error
 func DeleteUser(id string) error {
 	const qs = "DELETE FROM users WHERE id=$1"
 	var err error
@@ -141,4 +149,27 @@ func GetUserByUsername(username string) (*UserModel, error) {
 func UpdateUser(u UserModel) error {
 	const qs = "UPDATE users SET username=$2, email=$3, encrypted_password=$4 WHERE id=$1"
 	return nil
+}
+
+func GetUserByFacebook(facebookId string) (*UserModel, error) {
+	const qs = "SELECT id, username, email FROM users WHERE id=(SELECT user_id FROM facebook_users WHERE facebook_user_id=$1);"
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer PgPool.Release(conn)
+
+	var id string
+	var username string
+	var email string
+	row := conn.QueryRow(qs, facebookId)
+	err = row.Scan(&id, &username, &email)
+	if err != nil {
+		return nil, err
+	}
+	return &UserModel{
+		Id: id,
+		Username: username,
+		Email: email,
+	}, nil
 }

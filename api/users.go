@@ -13,18 +13,22 @@ import (
 
 type userResponse struct {
 	Id       string `json:"id"`
-	Username string `json:"username"`
+	Username string `json:"username,omitempty"`
 	Email    string `json:"email"`
 }
 
 type userRequest struct {
-	Id                   *string `json:"id"`
-	Username             *string `json:"username"`
-	Email                *string `json:"email"`
-	Password             *string `json:"password"`
-	PasswordConfirmation *string `json:"passwordConfirmation"`
+	Id                   *string `json:"id,omitempty"`
+	Username             *string `json:"username,omitempty"`
+	Email                *string `json:"email,omitempty"`
+	Password             *string `json:"password,omitempty"`
+	PasswordConfirmation *string `json:"password_confirmation,omitempty"`
 }
 
+// validateUser ensures that a user request is valid.
+// If the request is valid, nil is returned, otherwise a populated
+// errorStruct is returned, identifying the errors encountered during
+// validation
 func validateUser(u userRequest, act string) *[]errorStruct {
 	vErrs := []errorStruct{}
 	valid := true
@@ -74,6 +78,9 @@ func validateUser(u userRequest, act string) *[]errorStruct {
 	return nil
 }
 
+// createUser is an httprouter handler function which responds to POST requests for users
+// It performs the CRUD create operation in a RESTful manner by validating the request
+// and writing the user to the database
 func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// TODO: pull these from a pool
 	decoder := json.NewDecoder(r.Body)
