@@ -118,8 +118,27 @@ func GetUserById(id string) (*UserModel, error) {
 }
 
 func GetUserByEmail(email string) (*UserModel, error) {
-	const qs = "SELECT * FROM users WHERE email=$1"
-	return nil, nil
+	const qs = "SELECT id, username, encrypted_password FROM users WHERE email=$1"
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer PgPool.Release(conn)
+
+	var id string
+	var username string
+	var encrypted_password []byte
+	row := conn.QueryRow(qs, username)
+	err = row.Scan(&id, &username, &encrypted_password)
+	if err != nil {
+		return nil, err
+	}
+	return &UserModel{
+		Id: id,
+		Username: username,
+		Email: email,
+		EncryptedPassword: encrypted_password,
+	}, nil
 }
 
 func GetUserByUsername(username string) (*UserModel, error) {
@@ -151,8 +170,60 @@ func UpdateUser(u UserModel) error {
 	return nil
 }
 
+
+// CreateUserByFacebook takes a facebookId and an email and creates a new user with that email, then links the
+// facebook_users table to that new user
+func CreateUserByFacebook(facebookId string, email string) (*UserModel, error) {
+	const qsInsUser = "INSERT INTO users(email) VALUES($1)"
+	const qsSel = "SELECT id, username FROM users where email=$1"
+	const qsInsFBUser = "INSERT INTO facebook_users(facebook_user_id, user_id) VALUES ($1, $2)"
+
+	// Get a connection from the pool and set it up to release
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer PgPool.Release(conn)
+
+	// Begin a transaction and set it up to rollback by default
+	tx, err := conn.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Attempt to insert the new user
+	if _, err = tx.Exec(qsInsUser, email); err != nil {
+		return nil, err
+	}
+
+	// Attempt to find the new user's id by username and email
+	row := tx.QueryRow(qsSel, email)
+	var id string
+	var username string
+	if err = row.Scan(&id, &username); err != nil {
+		return nil, err
+	}
+
+	// Attempt to write the facebook id link to facebook_users
+	if _, err = tx.Exec(qsInsFBUser, facebookId, id); err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+	return &UserModel{
+		Id: id,
+		Username: username,
+		Email: email,
+	}, nil
+}
+
+// GetUserByFacebook takes a facebook user id (provided by facebook per app) and uses it to look for linked users
+// If a link exists, it retrieves the user by the id linked.
 func GetUserByFacebook(facebookId string) (*UserModel, error) {
-	const qs = "SELECT id, username, email FROM users WHERE id=(SELECT user_id FROM facebook_users WHERE facebook_user_id=$1);"
+	const qs = "SELECT id, username, email FROM users WHERE id=(SELECT user_id FROM facebook_users WHERE facebook_user_id=$1)"
 	conn, err := PgPool.Acquire()
 	if err != nil {
 		return nil, err

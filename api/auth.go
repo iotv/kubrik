@@ -17,6 +17,11 @@ type serverFacebookTokenResponse struct {
 	ExpiresIn   *int    `json:"expires_in,omitempty"`
 }
 
+type serverFacebookUserAttributes struct {
+	Id    *string `json:"id,omitempty"`
+	Email *string `json:"email,omitempty"`
+}
+
 type clientFacebookTokenRequest struct {
 	Code        *string `json:"code"`
 	ClientId    *string `json:"client_id"`
@@ -32,27 +37,6 @@ type tokenRequest struct {
 type tokenResponse struct {
 	Token     string `json:"token"`
 	TokenType string `json:"token_type"`
-}
-
-type debugFacebookTokenResponse struct {
-	Data *struct {
-		AppId       *string               `json:"app_id,omitempty"`
-		Application *string               `json:"application,omitempty"`
-
-		Error *struct {
-			Code    *int    `json:"code,omitempty"`
-			Message *string `json:"message,omitempty"`
-			Subcode *int    `json:"subcode,omitempty"`
-		}                                 `json:"error,omitempty"`
-
-		ExpiresAt *int                    `json:"expires_at,omitempty"`
-		IsValid   *bool                   `json:"is_valid,omitempty"`
-		IssuedAt  *int                    `json:"issued_at,omitempty"`
-		Metadata  *map[string]interface{} `json:"metadata,omitempty"`
-		ProfileId *string                 `json:"profile_id,omitempty"`
-		Scopes    *[]string               `json:"scopes,omitempty"`
-		UserId    *string                 `json:"user_id,omitempty"`
-	} `json:"data,omitempty"`
 }
 
 func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -181,13 +165,16 @@ func loginOrSignUpWithFacebook(w http.ResponseWriter, r *http.Request, _ httprou
 	accessToken, err := convertFacebookCodeToToken(req)
 	// TODO: check error and handle
 	// Inspect token
-	fbToken, err := debugFacebookToken(*accessToken.AccessToken)
+	userAttrs, err := getFacebookUserAttributes(*accessToken.AccessToken)
 	// TODO: validate fb token has fields we need and request didn't error
 
 	var user *db.UserModel
-	user, err = db.GetUserByFacebook(*fbToken.Data.UserId)
+	user, err = db.GetUserByFacebook(*userAttrs.Id)
 	if err != pgx.ErrNoRows {
-		// TODO create user
+		user, err = db.CreateUserByFacebook(*userAttrs.Id, *userAttrs.Email)
+		if err != nil {
+			// TODO: handle
+		}
 	}
 
 	testSigningKey := []byte(viper.GetString("kubrik.secret"))
@@ -205,18 +192,18 @@ func loginOrSignUpWithFacebook(w http.ResponseWriter, r *http.Request, _ httprou
 
 }
 
-func debugFacebookToken(accessToken string) (*debugFacebookTokenResponse, error) {
-	req, err := http.NewRequest("GET", "https://graph.facebook.com/v2.8/debug_token", nil)
+func getFacebookUserAttributes(accessToken string) (*serverFacebookUserAttributes, error) {
+	req, err := http.NewRequest("GET", "https://graph.facebook.com/v2.8/me", nil)
 	if err != nil {
 		return nil, err
 	}
 	q := req.URL.Query()
-	q.Add("input_token", accessToken)
-	// TODO add access token here
+	q.Add("fields", "id,email")
+	q.Add("access_token", accessToken)
 
-	var fbResp debugFacebookTokenResponse
+	var fbResp serverFacebookUserAttributes
 	resp, err := http.DefaultClient.Do(req)
-	// TODO: Check status code for error
+	// TODO: Check response code
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&fbResp); err != nil {
 		return nil, err
