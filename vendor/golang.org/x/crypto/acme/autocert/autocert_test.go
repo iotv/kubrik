@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -107,6 +108,14 @@ func decodePayload(v interface{}, r io.Reader) error {
 }
 
 func TestGetCertificate(t *testing.T) {
+	testGetCertificate(t, false)
+}
+
+func TestGetCertificate_trailingDot(t *testing.T) {
+	testGetCertificate(t, true)
+}
+
+func testGetCertificate(t *testing.T, trailingDot bool) {
 	const domain = "example.org"
 	man := &Manager{Prompt: AcceptTOS}
 	defer man.stopRenew()
@@ -166,6 +175,9 @@ func TestGetCertificate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("new-cert: CSR: %v", err)
 			}
+			if csr.Subject.CommonName != domain {
+				t.Errorf("CommonName in CSR = %q; want %q", csr.Subject.CommonName, domain)
+			}
 			der, err := dummyCert(csr.PublicKey, domain)
 			if err != nil {
 				t.Fatalf("new-cert: dummyCert: %v", err)
@@ -200,11 +212,14 @@ func TestGetCertificate(t *testing.T) {
 	// simulate tls.Config.GetCertificate
 	var tlscert *tls.Certificate
 	done := make(chan struct{})
-	go func() {
-		hello := &tls.ClientHelloInfo{ServerName: domain}
+	go func(serverName string) {
+		if trailingDot {
+			serverName += "."
+		}
+		hello := &tls.ClientHelloInfo{ServerName: serverName}
 		tlscert, err = man.GetCertificate(hello)
 		close(done)
-	}()
+	}(domain)
 	select {
 	case <-time.After(time.Minute):
 		t.Fatal("man.GetCertificate took too long to return")
@@ -242,6 +257,23 @@ func TestGetCertificate(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Error("token cert was not removed")
 	case <-done:
+	}
+}
+
+func TestAccountKeyCache(t *testing.T) {
+	cache := make(memCache)
+	m := Manager{Cache: cache}
+	ctx := context.Background()
+	k1, err := m.accountKey(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	k2, err := m.accountKey(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(k1, k2) {
+		t.Errorf("account keys don't match: k1 = %#v; k2 = %#v", k1, k2)
 	}
 }
 
