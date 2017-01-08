@@ -13,7 +13,7 @@ type errorStruct struct {
 type errorResponse struct {
 	HttpStatus int           `json:"httpStatus"`
 	Message    string        `json:"message"`
-	Errors     []errorStruct `json:"errors"`
+	Errors     *[]errorStruct `json:"errors,omitempty"`
 }
 
 func addContentTypeJSONHeader(w http.ResponseWriter) {
@@ -27,11 +27,19 @@ func write400(w http.ResponseWriter) {
 	encoder.Encode(errorResponse{
 		HttpStatus: http.StatusBadRequest,
 		Message: "Bad request",
-		Errors: []errorStruct{},
+		Errors: &[]errorStruct{},
 	})
 }
 
-func write401(w http.ResponseWriter) {
+func write401(w http.ResponseWriter, errs *[]errorStruct) {
+	encoder := json.NewEncoder(w)
+	addContentTypeJSONHeader(w)
+	w.WriteHeader(http.StatusUnauthorized)
+	encoder.Encode(&errorResponse{
+		HttpStatus: http.StatusUnauthorized,
+		Message:    "Unauthorized",
+		Errors: errs,
+	})
 }
 
 func write403(w http.ResponseWriter) {
@@ -44,7 +52,7 @@ func write404(w http.ResponseWriter) {
 	encoder.Encode(errorResponse{
 		HttpStatus: http.StatusNotFound,
 		Message: "Resource not found",
-		Errors: []errorStruct{
+		Errors: &[]errorStruct{
 			{
 				Error: "Id does not exist",
 				Fields: []string{
@@ -58,9 +66,10 @@ func write404(w http.ResponseWriter) {
 func write415(w http.ResponseWriter) {
 }
 
-func write422(w http.ResponseWriter, errs []errorStruct) {
+func write422(w http.ResponseWriter, errs *[]errorStruct) {
 	encoder := json.NewEncoder(w)
 	addContentTypeJSONHeader(w)
+
 	w.WriteHeader(http.StatusUnprocessableEntity)
 	encoder.Encode(errorResponse{
 		HttpStatus: http.StatusUnprocessableEntity,
@@ -76,7 +85,7 @@ func write500(w http.ResponseWriter) {
 	encoder.Encode(errorResponse{
 		HttpStatus: http.StatusInternalServerError,
 		Message: "Internal server error",
-		Errors: []errorStruct{},
+		Errors: &[]errorStruct{},
 	})
 
 }

@@ -13,7 +13,7 @@ import (
 
 type userResponse struct {
 	Id       string `json:"id"`
-	Username string `json:"username,omitempty"`
+	Username *string `json:"username,omitempty"`
 	Email    string `json:"email"`
 }
 
@@ -29,7 +29,7 @@ type userRequest struct {
 // If the request is valid, nil is returned, otherwise a populated
 // errorStruct is returned, identifying the errors encountered during
 // validation
-func validateUser(u userRequest, act string) *[]errorStruct {
+func validateUser(u userRequest, act string) (bool, *[]errorStruct) {
 	vErrs := []errorStruct{}
 	valid := true
 	if u.Id == nil && act != "create" {
@@ -72,10 +72,10 @@ func validateUser(u userRequest, act string) *[]errorStruct {
 	}
 
 	if !valid {
-		return nil
+		return false, &vErrs
 	}
 
-	return nil
+	return true, nil
 }
 
 // createUser is an httprouter handler function which responds to POST requests for users
@@ -94,8 +94,8 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	if vErrs := validateUser(req, "create"); vErrs != nil {
-		write422(w, *vErrs)
+	if valid, vErrs := validateUser(req, "create"); !valid {
+		write422(w, vErrs)
 		return
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), 10)
@@ -104,7 +104,7 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	newUser, err := db.CreateUser(db.UserModel{
-		Username:          *req.Username,
+		Username:          req.Username,
 		Email:             *req.Email,
 		EncryptedPassword: hash,
 	})
@@ -185,6 +185,7 @@ func showUserByUsername(w http.ResponseWriter, _ *http.Request, p httprouter.Par
 
 func updateUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 }
+
 
 func RouteUser(router *httprouter.Router) {
 	router.GET("/users", listUsers)

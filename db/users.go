@@ -6,7 +6,7 @@ import (
 
 type UserModel struct {
 	Id                string
-	Username          string
+	Username          *string
 	Email             string
 	EncryptedPassword []byte
 }
@@ -101,7 +101,7 @@ func GetUserById(id string) (*UserModel, error) {
 	}
 	defer PgPool.Release(conn)
 
-	var username string
+	var username *string
 	var email string
 	var encrypted_password []byte
 	row := conn.QueryRow(qs, id)
@@ -126,7 +126,7 @@ func GetUserByEmail(email string) (*UserModel, error) {
 	defer PgPool.Release(conn)
 
 	var id string
-	var username string
+	var username *string
 	var encrypted_password []byte
 	row := conn.QueryRow(qs, username)
 	err = row.Scan(&id, &username, &encrypted_password)
@@ -159,7 +159,7 @@ func GetUserByUsername(username string) (*UserModel, error) {
 	}
 	return &UserModel{
 		Id: id,
-		Username: username,
+		Username: &username,
 		Email: email,
 		EncryptedPassword: encrypted_password,
 	}, nil
@@ -185,34 +185,24 @@ func CreateUserByFacebook(facebookId string, email string) (*UserModel, error) {
 	}
 	defer PgPool.Release(conn)
 
-	// Begin a transaction and set it up to rollback by default
-	tx, err := conn.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	// Attempt to insert the new user
-	if _, err = tx.Exec(qsInsUser, email); err != nil {
+	if _, err = conn.Exec(qsInsUser, email); err != nil {
 		return nil, err
 	}
 
 	// Attempt to find the new user's id by username and email
-	row := tx.QueryRow(qsSel, email)
+	row := conn.QueryRow(qsSel, email)
 	var id string
-	var username string
+	var username *string
 	if err = row.Scan(&id, &username); err != nil {
 		return nil, err
 	}
 
 	// Attempt to write the facebook id link to facebook_users
-	if _, err = tx.Exec(qsInsFBUser, facebookId, id); err != nil {
+	if _, err = conn.Exec(qsInsFBUser, facebookId, id); err != nil {
 		return nil, err
 	}
 
-	if err = tx.Commit(); err != nil {
-		return nil, err
-	}
 	return &UserModel{
 		Id: id,
 		Username: username,
@@ -231,7 +221,7 @@ func GetUserByFacebook(facebookId string) (*UserModel, error) {
 	defer PgPool.Release(conn)
 
 	var id string
-	var username string
+	var username *string
 	var email string
 	row := conn.QueryRow(qs, facebookId)
 	err = row.Scan(&id, &username, &email)

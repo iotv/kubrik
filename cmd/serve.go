@@ -7,6 +7,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mg4tv/kubrik/api"
 	"github.com/urfave/negroni"
+	"github.com/meatballhat/negroni-logrus"
+	"github.com/mg4tv/kubrik/log"
 )
 
 var ServeCmd = &cobra.Command{
@@ -34,7 +36,9 @@ func serve(cmd *cobra.Command, args []string) {
 	router := httprouter.New()
 	api.RouteAuth(router)
 	api.RouteUser(router)
-	n := negroni.Classic()
+	n := negroni.New()
+	n.Use(negroni.NewRecovery())
+	n.Use(negronilogrus.NewMiddlewareFromLogger(log.Logger, "HTTP"))
 	n.Use(corsMiddleware)
 	n.UseHandler(router)
 	n.Run(host + ":" + port)
