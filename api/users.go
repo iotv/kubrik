@@ -12,9 +12,9 @@ import (
 )
 
 type userResponse struct {
-	Id       string `json:"id"`
+	Id       string  `json:"id"`
 	Username *string `json:"username,omitempty"`
-	Email    string `json:"email"`
+	Email    string  `json:"email"`
 }
 
 type userRequest struct {
@@ -133,13 +133,13 @@ func partiallyUpdateUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Pa
 
 func showUser(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
 	encoder := json.NewEncoder(w)
-	rawID := p.ByName("id")
-	if _, err := uuid.FromString(rawID); err != nil {
+	rawId := p.ByName("id")
+	if _, err := uuid.FromString(rawId); err != nil {
 		write400(w)
 		return
 	}
 
-	user, err := db.GetUserById(rawID)
+	user, err := db.GetUserById(rawId)
 	if err == pgx.ErrNoRows {
 		write404(w)
 		return
@@ -159,13 +159,9 @@ func showUser(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
 
 func showUserByUsername(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
 	encoder := json.NewEncoder(w)
-	rawUsername := p.ByName("username")
-	if _, err := uuid.FromString(rawUsername); err != nil {
-		write400(w)
-		return
-	}
+	username := p.ByName("username")
 
-	user, err := db.GetUserByUsername(rawUsername)
+	user, err := db.GetUserByUsername(username)
 	if err == pgx.ErrNoRows {
 		write404(w)
 		return
@@ -186,11 +182,9 @@ func showUserByUsername(w http.ResponseWriter, _ *http.Request, p httprouter.Par
 func updateUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 }
 
-
 func RouteUser(router *httprouter.Router) {
 	router.GET("/users", listUsers)
 	router.POST("/users", createUser)
-
 
 	router.DELETE("/users/:id", deleteUser)
 	router.GET("/users/:id", showUser)
@@ -198,4 +192,5 @@ func RouteUser(router *httprouter.Router) {
 	router.PUT("/users/:id", updateUser)
 
 	router.GET("/userByUsername/:username", showUserByUsername)
+	//router.GET("/usersByEmail/:email", showUserByEmail)
 }
