@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 CREATE TABLE IF NOT EXISTS organization_groups (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name            VARCHAR(31)                                          NOT NULL,
+  is_public       BOOLEAN                                              NOT NULL,
   organization_id UUID REFERENCES organizations (id) ON DELETE CASCADE NOT NULL,
   UNIQUE (name, organization_id)
 );

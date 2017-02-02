@@ -7,7 +7,6 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/mg4tv/kubrik/db"
 	"github.com/jackc/pgx"
-	"os/user"
 )
 
 type organizationResponse struct {
@@ -43,9 +42,9 @@ func showOrganization(w http.ResponseWriter, r *http.Request, p httprouter.Param
 }
 
 func showOrganizationByName(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	r.Header.Get("authorization")
 	encoder := json.NewEncoder(w)
 	name := p.ByName("name")
-
 
 	org, err := db.GetOrganizationByName(name)
 	if err == pgx.ErrNoRows {

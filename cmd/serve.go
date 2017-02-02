@@ -35,6 +35,7 @@ func serve(cmd *cobra.Command, args []string) {
 	corsMiddleware := cors.Default()
 	router := httprouter.New()
 	api.RouteAuth(router)
+	api.RouteOrganization(router)
 	api.RouteUser(router)
 	n := negroni.New()
 	n.Use(negroni.NewRecovery())
