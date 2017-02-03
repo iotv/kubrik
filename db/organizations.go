@@ -9,6 +9,10 @@ type OrganizationModel struct {
 type OrganizationGroupModel struct {
 }
 
+func CreateOrganization(o OrganizationModel) (*OrganizationModel, error) {
+	return nil, nil
+}
+
 func GetOrganizationById(id string) (*OrganizationModel, error) {
 	const qs = "SELECT name, owner_id FROM organizations WHERE id=$1"
 	conn, err := PgPool.Acquire()

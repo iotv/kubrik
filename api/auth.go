@@ -11,6 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/mg4tv/kubrik/log"
 	"github.com/mg4tv/kubrik/conf"
+	"github.com/satori/go.uuid"
 )
 
 type serverFacebookTokenResponse struct {
@@ -39,6 +40,11 @@ type tokenRequest struct {
 type tokenResponse struct {
 	Token     string `json:"token"`
 	TokenType string `json:"token_type"`
+}
+
+type jwtClaims struct {
+	UserId *string `json:"uid,omitempty"`
+	jwt.StandardClaims
 }
 
 // login is an httprouter.HandlerFunc which handles username/email & password login
@@ -233,6 +239,28 @@ func deauthFacebook(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params)
 }
 
 func convertGoogleToken(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+}
+
+func jwtKeyFunc(_ *jwt.Token) (interface{}, error) {
+	return []byte(conf.Config.GetString("kubrik.secret")), nil
+}
+
+func GetUserIdFromToken(token string) (*string, error) {
+	var jwtT *jwt.Token
+	var err error
+	if jwtT, err = jwt.ParseWithClaims(token, &jwtClaims{}, jwtKeyFunc); err !=nil {
+		return nil, err
+	}
+	if claims, ok := jwtT.Claims.(*jwtClaims); ok && jwtT.Valid {
+		if claims.UserId != nil {
+			if _, err := uuid.FromString(*claims.UserId); err != nil {
+				return claims.UserId, nil
+			}
+			return nil, errors.New("Claimed user id is not a UUID")
+		}
+		return nil, errors.New("Unspecified user id in claims")
+	}
+	return nil, errors.New("Invalid JWT")
 }
 
 func RouteAuth(router *httprouter.Router) {

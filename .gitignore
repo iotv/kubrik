@@ -25,5 +25,7 @@ _testmain.go
 
 # The compiled binary
 /kubrik
+
+# Files that gogland/intellij creates
 /.idea/
 

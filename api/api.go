@@ -20,6 +20,10 @@ func addContentTypeJSONHeader(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 }
 
+func addWWWAuthenticateHeader(w http.ResponseWriter) {
+	w.Header().Set("WWW-Authenticate", "Bearer login=\"/auth/login\"")
+}
+
 func write400(w http.ResponseWriter) {
 	encoder := json.NewEncoder(w)
 	addContentTypeJSONHeader(w)
@@ -34,6 +38,7 @@ func write400(w http.ResponseWriter) {
 func write401(w http.ResponseWriter, errs *[]errorStruct) {
 	encoder := json.NewEncoder(w)
 	addContentTypeJSONHeader(w)
+	addWWWAuthenticateHeader(w)
 	w.WriteHeader(http.StatusUnauthorized)
 	encoder.Encode(&errorResponse{
 		HttpStatus: http.StatusUnauthorized,
