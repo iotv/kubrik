@@ -10,6 +10,7 @@ type OrganizationGroupModel struct {
 }
 
 func CreateOrganization(o OrganizationModel) (*OrganizationModel, error) {
+	const qsIns = "INSERT INTO organizationss(name, owner_id) VALUES($1, $2)"
 	return nil, nil
 }
 
