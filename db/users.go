@@ -126,7 +126,7 @@ func GetUserByEmail(email string) (*UserModel, error) {
 	var id string
 	var username *string
 	var encrypted_password []byte
-	row := conn.QueryRow(qs, username)
+	row := conn.QueryRow(qs, email)
 	err = row.Scan(&id, &username, &encrypted_password)
 	if err != nil {
 		return nil, err
