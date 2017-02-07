@@ -255,7 +255,7 @@ func jwtKeyFunc(_ *jwt.Token) (interface{}, error) {
 func GetUserIdFromToken(token string) (*string, error) {
 	var jwtT *jwt.Token
 	var err error
-	if jwtT, err = jwt.ParseWithClaims(token, &jwtClaims{}, jwtKeyFunc); err !=nil {
+	if jwtT, err = jwt.ParseWithClaims(token, &jwtClaims{}, jwtKeyFunc); err != nil {
 		return nil, err
 	}
 	if claims, ok := jwtT.Claims.(*jwtClaims); ok && jwtT.Valid {
