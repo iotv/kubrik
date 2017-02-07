@@ -88,7 +88,14 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		// To prevent this, we manually set the user.EncryptedPassword so that the bcrypt hash comparison below will
 		// Still happen and take time as if the user exists, but will always fail because []byte("FAKEPASSWORD") cannot
 		// be the resulting bytes from our bcrypt hash as it is much too short.
-		user.EncryptedPassword = []byte("FAKEPASSWORD")
+		bcrypt.CompareHashAndPassword([]byte("FAKEPASSWORD"), []byte(*req.Password))
+		write401(w, &[]errorStruct{
+			{
+				Error:  "Invalid Login/Password combination",
+				Fields: []string{"password", "email", "username"},
+			},
+		})
+		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.EncryptedPassword, []byte(*req.Password)); err != nil {
