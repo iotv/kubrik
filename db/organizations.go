@@ -10,8 +10,40 @@ type OrganizationGroupModel struct {
 }
 
 func CreateOrganization(o OrganizationModel) (*OrganizationModel, error) {
-	const qsIns = "INSERT INTO organizationss(name, owner_id) VALUES($1, $2)"
-	return nil, nil
+	const qsIns = "INSERT INTO organizations(name, owner_id) VALUES($1, $2)"
+	const qsSel = "SELECT id FROM organizations WHERE name=$1 AND owner_id=$2"
+	var err error
+
+	// Get a connection from the pool and set it up to release
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer PgPool.Release(conn)
+
+	// Begin a transaction and set it up to rollback by default
+	tx, err := conn.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Attempt to insert the new user
+	if _, err = tx.Exec(qsIns, o.Name, o.OwnerId); err != nil {
+		return nil, err
+	}
+
+	// Attempt to find the new user's id by username and email
+	row := tx.QueryRow(qsSel, o.Name, o.OwnerId)
+	var id string
+	if err = row.Scan(&id); err != nil {
+		return nil, err
+	}
+	o.Id = id
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+	return &o, nil
 }
 
 func GetOrganizationById(id string) (*OrganizationModel, error) {

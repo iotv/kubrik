@@ -24,7 +24,6 @@ func init() {
 	})
 }
 
-
 // CreateUser takes a UserModel and writes it to the database.
 // If this write was successful, it returns a Usermodel as seen by the database and a nil error.
 // Otherwise, it returns a nil model and an errror
@@ -64,7 +63,6 @@ func CreateUser(u UserModel) (*UserModel, error) {
 	}
 	return &u, nil
 }
-
 
 // DeleteUser takes a user id and removes the row containing that user from the database/
 // If this delete was sucessful, it returns nil.
@@ -110,9 +108,9 @@ func GetUserById(id string) (*UserModel, error) {
 		return nil, err
 	}
 	return &UserModel{
-		Id: id,
-		Username: username,
-		Email: email,
+		Id:                id,
+		Username:          username,
+		Email:             email,
 		EncryptedPassword: encrypted_password,
 	}, nil
 }
@@ -134,9 +132,9 @@ func GetUserByEmail(email string) (*UserModel, error) {
 		return nil, err
 	}
 	return &UserModel{
-		Id: id,
-		Username: username,
-		Email: email,
+		Id:                id,
+		Username:          username,
+		Email:             email,
 		EncryptedPassword: encrypted_password,
 	}, nil
 }
@@ -158,9 +156,9 @@ func GetUserByUsername(username string) (*UserModel, error) {
 		return nil, err
 	}
 	return &UserModel{
-		Id: id,
-		Username: &username,
-		Email: email,
+		Id:                id,
+		Username:          &username,
+		Email:             email,
 		EncryptedPassword: encrypted_password,
 	}, nil
 }
@@ -169,7 +167,6 @@ func UpdateUser(u UserModel) error {
 	const qs = "UPDATE users SET username=$2, email=$3, encrypted_password=$4 WHERE id=$1"
 	return nil
 }
-
 
 // CreateUserByFacebook takes a facebookId and an email and creates a new user with that email, then links the
 // facebook_users table to that new user
@@ -204,9 +201,9 @@ func CreateUserByFacebook(facebookId string, email string) (*UserModel, error) {
 	}
 
 	return &UserModel{
-		Id: id,
+		Id:       id,
 		Username: username,
-		Email: email,
+		Email:    email,
 	}, nil
 }
 
@@ -229,8 +226,8 @@ func GetUserByFacebook(facebookId string) (*UserModel, error) {
 		return nil, err
 	}
 	return &UserModel{
-		Id: id,
+		Id:       id,
 		Username: username,
-		Email: email,
+		Email:    email,
 	}, nil
 }
