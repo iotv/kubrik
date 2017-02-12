@@ -7,6 +7,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/mg4tv/kubrik/db"
 	"github.com/jackc/pgx"
+	"fmt"
 )
 
 type organizationResponse struct {
@@ -33,7 +34,7 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		} else {
 			write401(w, &[]errorStruct{
 				{
-					Error: "This endpoint requires a logged in user.",
+					Error:  "This endpoint requires a logged in user.",
 					Fields: []string{"header: authorization"},
 				},
 			})
@@ -50,10 +51,7 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		write422(w, vErrs)
 		return
 	}*/
-	newOrg, err := db.CreateOrganization(db.OrganizationModel{
-		Name: *req.Name,
-		OwnerId: *userId,
-	})
+	newOrg, err := db.CreateOrganization(*req.Name, *userId)
 	if err != nil {
 		write500(w)
 		return
@@ -61,6 +59,7 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 	addContentTypeJSONHeader(w)
 	w.WriteHeader(http.StatusOK)
+	fmt.Println(newOrg)
 	encoder.Encode(&organizationResponse{
 		Id:      newOrg.Id,
 		Name:    newOrg.Name,
@@ -88,9 +87,9 @@ func showOrganization(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	addContentTypeJSONHeader(w)
 	w.WriteHeader(http.StatusOK)
 	encoder.Encode(&organizationResponse{
-		Id:         org.Id,
-		Name:       org.Name,
-		OwnerId:    org.OwnerId,
+		Id:      org.Id,
+		Name:    org.Name,
+		OwnerId: org.OwnerId,
 	})
 }
 
@@ -110,9 +109,9 @@ func showOrganizationByName(w http.ResponseWriter, r *http.Request, p httprouter
 	addContentTypeJSONHeader(w)
 	w.WriteHeader(http.StatusOK)
 	encoder.Encode(&organizationResponse{
-		Id:         org.Id,
-		Name:       org.Name,
-		OwnerId:    org.OwnerId,
+		Id:      org.Id,
+		Name:    org.Name,
+		OwnerId: org.OwnerId,
 	})
 }
 

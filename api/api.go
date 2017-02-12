@@ -48,6 +48,15 @@ func write401(w http.ResponseWriter, errs *[]errorStruct) {
 }
 
 func write403(w http.ResponseWriter) {
+	encoder := json.NewEncoder(w)
+	addContentTypeJSONHeader(w)
+	addWWWAuthenticateHeader(w)
+	w.WriteHeader(http.StatusForbidden)
+	encoder.Encode(&errorResponse{
+		HttpStatus: http.StatusForbidden,
+		Message:    "Forbidden",
+		Errors:     &[]errorStruct{},
+	})
 }
 
 func write404(w http.ResponseWriter) {

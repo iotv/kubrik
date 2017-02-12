@@ -12,6 +12,7 @@ import (
 	"github.com/mg4tv/kubrik/log"
 	"github.com/mg4tv/kubrik/conf"
 	"github.com/satori/go.uuid"
+	"strings"
 )
 
 type serverFacebookTokenResponse struct {
@@ -252,18 +253,22 @@ func jwtKeyFunc(_ *jwt.Token) (interface{}, error) {
 	return []byte(conf.Config.GetString("kubrik.secret")), nil
 }
 
-func GetUserIdFromToken(token string) (*string, error) {
+func GetUserIdFromToken(header string) (*string, error) {
 	var jwtT *jwt.Token
 	var err error
-	if jwtT, err = jwt.ParseWithClaims(token, &jwtClaims{}, jwtKeyFunc); err != nil {
+	headerParts := strings.Split(header, " ")
+	if len(headerParts) != 2 || strings.ToLower(headerParts[0]) != "bearer" {
+		return nil, errors.New("Inmroper token form. Must begin with 'bearer '.")
+	}
+	if jwtT, err = jwt.ParseWithClaims(headerParts[1], &jwtClaims{}, jwtKeyFunc); err != nil {
 		return nil, err
 	}
 	if claims, ok := jwtT.Claims.(*jwtClaims); ok && jwtT.Valid {
 		if claims.UserId != nil {
 			if _, err := uuid.FromString(*claims.UserId); err != nil {
-				return claims.UserId, nil
+				return nil, errors.New("Claimed user id is not a UUID")
 			}
-			return nil, errors.New("Claimed user id is not a UUID")
+			return claims.UserId, nil
 		}
 		return nil, errors.New("Unspecified user id in claims")
 	}
