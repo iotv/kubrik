@@ -77,6 +77,17 @@ func write404(w http.ResponseWriter) {
 	})
 }
 
+func write409(w http.ResponseWriter, errs *[]errorStruct) {
+	encoder := json.NewEncoder(w)
+	addContentTypeJSONHeader(w)
+	w.WriteHeader(http.StatusConflict)
+	encoder.Encode(errorResponse{
+		HttpStatus: http.StatusConflict,
+		Message:    "Conflict",
+		Errors:     errs,
+	})
+}
+
 func write415(w http.ResponseWriter) {
 }
 

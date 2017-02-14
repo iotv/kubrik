@@ -51,7 +51,7 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		write422(w, vErrs)
 		return
 	}*/
-	newOrg, err := db.CreateOrganization(*req.Name, *userId)
+	newOrg, err := db.CreateOrganization(*req.Name, *userId, false)
 	if err != nil {
 		write500(w)
 		return

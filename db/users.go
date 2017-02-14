@@ -39,28 +39,20 @@ func CreateUser(u UserModel) (*UserModel, error) {
 	}
 	defer PgPool.Release(conn)
 
-	// Begin a transaction and set it up to rollback by default
-	tx, err := conn.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	// Attempt to insert the new user
-	if _, err = tx.Exec(qsIns, u.Username, u.Email, u.EncryptedPassword); err != nil {
+	if _, err = conn.Exec(qsIns, u.Username, u.Email, u.EncryptedPassword); err != nil {
 		return nil, err
 	}
 
 	// Attempt to find the new user's id by username and email
-	row := tx.QueryRow(qsSel, u.Username, u.Email)
+	row := conn.QueryRow(qsSel, u.Username, u.Email)
 	var id string
 	if err = row.Scan(&id); err != nil {
 		return nil, err
 	}
 	u.Id = id
-	if err = tx.Commit(); err != nil {
-		return nil, err
-	}
+
 	return &u, nil
 }
 

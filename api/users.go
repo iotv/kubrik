@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/mg4tv/kubrik/db"
-	"github.com/satori/go.uuid"
 	"github.com/jackc/pgx"
+	"github.com/satori/go.uuid"
 )
 
 type userResponse struct {
@@ -62,7 +62,7 @@ func validateUser(u userRequest, act string) (bool, *[]errorStruct) {
 			Error: "Password and password confirmation cannot be empty",
 			Fields: []string{
 				"password",
-				"passwordConfirmation",
+				"password_confirmation",
 			},
 		})
 	}
@@ -98,19 +98,71 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		write422(w, vErrs)
 		return
 	}
+	// TODO: encrypt hash
 	hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), 10)
 	if err != nil {
 		write500(w)
 		return
 	}
+
 	newUser, err := db.CreateUser(db.UserModel{
 		Username:          req.Username,
 		Email:             *req.Email,
 		EncryptedPassword: hash,
 	})
 	if err != nil {
+		if pgErr := err.(pgx.PgError); pgErr.Code == "23505" /*duplicate key violates unique constraint*/ {
+			write409(w, &[]errorStruct{
+				{
+					Error: pgErr.ConstraintName + "must be unique",
+					Fields: []string{
+						pgErr.ConstraintName,
+					},
+				},
+			})
+			return
+		}
 		write500(w)
 		return
+	}
+
+	// TODO: extract for update/partial update
+	// FIXME: do this in a transaction?
+	// Check if username is taken by groups first
+	if req.Username != nil {
+		if _, err := db.GetOrganizationByName(*req.Username); err == pgx.ErrNoRows {
+			if _, err := db.CreateOrganization(*req.Username, newUser.Id, true); err != nil {
+				if pgErr := err.(pgx.PgError); "23505" /*duplicate key violates unique constraint*/ {
+					db.DeleteUser(newUser.Id) // FIXME: handle error
+					write409(w, &[]errorStruct{
+						{
+							Error: pgErr.ConstraintName + "must be unique",
+							Fields: []string{
+								pgErr.ConstraintName,
+							},
+						},
+					})
+					return
+				} else {
+					db.DeleteUser(newUser.Id) // FIXME: handle error
+					write500(w)
+					return
+				}
+			}
+		} else if err == nil {
+			write409(w, &[]errorStruct{
+				{
+					Error: "Username must be unique",
+					Fields: []string{
+						"username",
+					},
+				},
+			})
+			return
+		} else {
+			write500(w)
+			return
+		}
 	}
 
 	addContentTypeJSONHeader(w)

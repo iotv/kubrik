@@ -1,8 +1,12 @@
 CREATE TABLE IF NOT EXISTS organizations (
-  id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name     VARCHAR(31) UNIQUE                                  NOT NULL,
-  owner_id UUID REFERENCES users (id) ON DELETE CASCADE        NOT NULL
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name        VARCHAR(31) UNIQUE                                  NOT NULL,
+  is_user_org BOOLEAN                                             NOT NULL,
+  owner_id    UUID REFERENCES users (id) ON DELETE CASCADE        NOT NULL
 );
+
+
+CREATE UNIQUE INDEX unique_user_organizations ON organizations (owner_id) WHERE is_user_org;
 
 
 CREATE TABLE IF NOT EXISTS organization_groups (
