@@ -132,7 +132,7 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if req.Username != nil {
 		if _, err := db.GetOrganizationByName(*req.Username); err == pgx.ErrNoRows {
 			if _, err := db.CreateOrganization(*req.Username, newUser.Id, true); err != nil {
-				if pgErr := err.(pgx.PgError); "23505" /*duplicate key violates unique constraint*/ {
+				if pgErr := err.(pgx.PgError); pgErr.Code == "23505" /*duplicate key violates unique constraint*/ {
 					db.DeleteUser(newUser.Id) // FIXME: handle error
 					write409(w, &[]errorStruct{
 						{
