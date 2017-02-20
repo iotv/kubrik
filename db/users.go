@@ -1,9 +1,5 @@
 package db
 
-import (
-	"github.com/jackc/pgx"
-)
-
 type UserModel struct {
 	Id                string
 	Username          *string
@@ -11,18 +7,6 @@ type UserModel struct {
 	EncryptedPassword []byte
 }
 
-var PgPool *pgx.ConnPool
-
-func init() {
-	PgPool, _ = pgx.NewConnPool(pgx.ConnPoolConfig{
-		ConnConfig: pgx.ConnConfig{
-			Host:     "db",
-			User:     "postgres",
-			Password: "postgres",
-			Database: "mg4",
-		},
-	})
-}
 
 // CreateUser takes a UserModel and writes it to the database.
 // If this write was successful, it returns a Usermodel as seen by the database and a nil error.

@@ -13,6 +13,7 @@ import (
 	"github.com/mg4tv/kubrik/conf"
 	"github.com/satori/go.uuid"
 	"strings"
+	"io/ioutil"
 )
 
 type serverFacebookTokenResponse struct {
@@ -145,7 +146,12 @@ func convertFacebookCodeToToken(request clientFacebookTokenRequest) (*serverFace
 		"resp": resp,
 	}).Debug("Convert code response")
 	if resp.StatusCode != http.StatusOK {
-		log.Logger.WithField("URL", req.URL.RequestURI()).Error("Facebook didn't like our request")
+		// FIXME: handle error within error inception
+		body, _ := ioutil.ReadAll(resp.Body)
+		log.Logger.
+			WithField("URL", req.URL.RequestURI()).
+			WithField("Body", body).
+			Error("Facebook didn't like our request")
 		return nil, errors.New("Bad Loginorino")
 	}
 

@@ -34,9 +34,13 @@ func init() {
 func serve(cmd *cobra.Command, args []string) {
 	corsMiddleware := cors.Default()
 	router := httprouter.New()
+
+	// Initiate subroutes
 	api.RouteAuth(router)
 	api.RouteOrganization(router)
 	api.RouteUser(router)
+	api.RouteVideos(router)
+
 	n := negroni.New()
 	n.Use(negroni.NewRecovery())
 	n.Use(negronilogrus.NewMiddlewareFromLogger(log.Logger, "HTTP"))
