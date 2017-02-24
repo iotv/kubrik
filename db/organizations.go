@@ -11,8 +11,7 @@ type OrganizationGroupModel struct {
 }
 
 func CreateOrganization(name, ownerId string, isUserOrg bool) (*OrganizationModel, error) {
-	const qsIns = "INSERT INTO organizations(name, owner_id, is_user_org) VALUES($1, $2, $3)"
-	const qsSel = "SELECT id FROM organizations WHERE name=$1 AND owner_id=$2 AND is_user_org=$3"
+	const qsIns = "INSERT INTO organizations(name, owner_id, is_user_org) VALUES($1, $2, $3) RETURNING id"
 	var err error
 
 	// Get a connection from the pool and set it up to release
@@ -23,12 +22,7 @@ func CreateOrganization(name, ownerId string, isUserOrg bool) (*OrganizationMode
 	defer PgPool.Release(conn)
 
 	// Attempt to insert the new user
-	if _, err = conn.Exec(qsIns, name, ownerId, isUserOrg); err != nil {
-		return nil, err
-	}
-
-	// Attempt to find the new org's id by name and owner id
-	row := conn.QueryRow(qsSel, name, ownerId, isUserOrg)
+	row := conn.QueryRow(qsIns, name, ownerId, isUserOrg)
 	var id string
 	if err = row.Scan(&id); err != nil {
 		return nil, err

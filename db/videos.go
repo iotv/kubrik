@@ -7,7 +7,7 @@ type VideoModel struct {
 }
 
 func ListVideos(number int) (*[]VideoModel, error) {
-	const qs = "SELECT id, title, organization_id FROM users"
+	const qs = "SELECT id, title, organization_id FROM users LIMIT $1"
 	return nil, nil
 	conn, err := PgPool.Acquire()
 	if err != nil {
@@ -15,7 +15,7 @@ func ListVideos(number int) (*[]VideoModel, error) {
 	}
 	defer PgPool.Release(conn)
 
-	rows, err := conn.Query(qs)
+	rows, err := conn.Query(qs, number)
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +32,8 @@ func ListVideos(number int) (*[]VideoModel, error) {
 		}
 
 		response = append(response, VideoModel{
-			Id: id,
-			Title: title,
+			Id:             id,
+			Title:          title,
 			OrganizationId: organizationId,
 		})
 	}
@@ -42,4 +42,27 @@ func ListVideos(number int) (*[]VideoModel, error) {
 
 }
 
+func CreateVideo(title, organizationId string) (*VideoModel, error) {
+	const qsIns = "INSERT INTO videos(title, organization_id) VALUES($1, $2) RETURNING id"
+	var err error
 
+	// Get a connection from the pool and set it up to release
+	conn, err := PgPool.Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer PgPool.Release(conn)
+
+	// Attempt to insert the new user
+	row := conn.QueryRow(qsIns, title, organizationId)
+	var id string
+	if err = row.Scan(&id); err != nil {
+		return nil, err
+	}
+
+	return &VideoModel{
+		Id:             id,
+		Title:          title,
+		OrganizationId: organizationId,
+	}, nil
+}

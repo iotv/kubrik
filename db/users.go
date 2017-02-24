@@ -4,16 +4,15 @@ type UserModel struct {
 	Id                string
 	Username          *string
 	Email             string
-	EncryptedPassword []byte
+	EncryptedPassword *[]byte
 }
 
 
 // CreateUser takes a UserModel and writes it to the database.
 // If this write was successful, it returns a Usermodel as seen by the database and a nil error.
 // Otherwise, it returns a nil model and an errror
-func CreateUser(u UserModel) (*UserModel, error) {
-	const qsIns = "INSERT INTO users(username, email, encrypted_password) VALUES($1, $2, $3)"
-	const qsSel = "SELECT id FROM users WHERE username=$1 AND email=$2"
+func CreateUser(username *string, email string, encrpyted_password *[]byte) (*UserModel, error) {
+	const qsIns = "INSERT INTO users(username, email, encrypted_password) VALUES($1, $2, $3) RETURNING id"
 	var err error
 
 	// Get a connection from the pool and set it up to release
@@ -25,23 +24,21 @@ func CreateUser(u UserModel) (*UserModel, error) {
 
 
 	// Attempt to insert the new user
-	if _, err = conn.Exec(qsIns, u.Username, u.Email, u.EncryptedPassword); err != nil {
-		return nil, err
-	}
-
-	// Attempt to find the new user's id by username and email
-	row := conn.QueryRow(qsSel, u.Username, u.Email)
+	row := conn.QueryRow(qsIns, username, email, encrpyted_password)
 	var id string
 	if err = row.Scan(&id); err != nil {
 		return nil, err
 	}
-	u.Id = id
-
-	return &u, nil
+	return &UserModel{
+		Id: id,
+		Username: username,
+		Email: email,
+		EncryptedPassword: encrpyted_password,
+	}, nil
 }
 
 // DeleteUser takes a user id and removes the row containing that user from the database/
-// If this delete was sucessful, it returns nil.
+// If this delete was successful, it returns nil.
 // Otherwise it returns an error
 func DeleteUser(id string) error {
 	const qs = "DELETE FROM users WHERE id=$1"
@@ -87,7 +84,7 @@ func GetUserById(id string) (*UserModel, error) {
 		Id:                id,
 		Username:          username,
 		Email:             email,
-		EncryptedPassword: encrypted_password,
+		EncryptedPassword: &encrypted_password,
 	}, nil
 }
 
@@ -101,7 +98,7 @@ func GetUserByEmail(email string) (*UserModel, error) {
 
 	var id string
 	var username *string
-	var encrypted_password []byte
+	var encrypted_password *[]byte
 	row := conn.QueryRow(qs, email)
 	err = row.Scan(&id, &username, &encrypted_password)
 	if err != nil {
@@ -125,7 +122,7 @@ func GetUserByUsername(username string) (*UserModel, error) {
 
 	var id string
 	var email string
-	var encrypted_password []byte
+	var encrypted_password *[]byte
 	row := conn.QueryRow(qs, username)
 	err = row.Scan(&id, &email, &encrypted_password)
 	if err != nil {

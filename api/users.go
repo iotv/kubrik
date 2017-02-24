@@ -9,6 +9,8 @@ import (
 	"github.com/mg4tv/kubrik/db"
 	"github.com/jackc/pgx"
 	"github.com/satori/go.uuid"
+	"github.com/mg4tv/kubrik/log"
+	"github.com/Sirupsen/logrus"
 )
 
 type userResponse struct {
@@ -105,11 +107,7 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	newUser, err := db.CreateUser(db.UserModel{
-		Username:          req.Username,
-		Email:             *req.Email,
-		EncryptedPassword: hash,
-	})
+	newUser, err := db.CreateUser(req.Username, *req.Email, &hash)
 	if err != nil {
 		if pgErr := err.(pgx.PgError); pgErr.Code == "23505" /*duplicate key violates unique constraint*/ {
 			write409(w, &[]errorStruct{
@@ -196,6 +194,9 @@ func showUser(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
 		write404(w)
 		return
 	} else if err != nil {
+		log.Logger.WithFields(logrus.Fields{
+			"db_err": err,
+		}).Debug("Get user by ID error")
 		write500(w)
 		return
 	}

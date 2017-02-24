@@ -7,7 +7,6 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/mg4tv/kubrik/db"
 	"github.com/jackc/pgx"
-	"fmt"
 )
 
 type organizationResponse struct {
@@ -47,6 +46,7 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		return
 	}
 
+	//FIXME: validate org
 	/*if valid, vErrs := validateOrganization(req, "create"); !valid {
 		write422(w, vErrs)
 		return
@@ -59,7 +59,6 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 	addContentTypeJSONHeader(w)
 	w.WriteHeader(http.StatusOK)
-	fmt.Println(newOrg)
 	encoder.Encode(&organizationResponse{
 		Id:      newOrg.Id,
 		Name:    newOrg.Name,
@@ -113,6 +112,10 @@ func showOrganizationByName(w http.ResponseWriter, r *http.Request, p httprouter
 		Name:    org.Name,
 		OwnerId: org.OwnerId,
 	})
+}
+
+func IsAuthorized(userId, organizationId, permission string) (bool, error) {
+	return true, nil
 }
 
 func RouteOrganization(router *httprouter.Router) {
