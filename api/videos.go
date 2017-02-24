@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/mg4tv/kubrik/db"
+	"github.com/mg4tv/kubrik/log"
 	"github.com/jackc/pgx"
+	"github.com/Sirupsen/logrus"
 )
 
 type videoResponse struct {
@@ -15,9 +17,9 @@ type videoResponse struct {
 }
 
 type videoRequest struct {
-	Id             *string `json:"name,omitempty"`
-	Title          *string `json:"name,omitempty"`
-	OrganizationId *string `json:"name,omitempty"`
+	Id             *string `json:"id,omitempty"`
+	Title          *string `json:"title,omitempty"`
+	OrganizationId *string `json:"organization_id,omitempty"`
 }
 
 func listVideos(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
@@ -45,7 +47,6 @@ func createVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var err error
 	var userId *string
 
-	//FIXME: validate
 
 	if userId, err = GetUserIdFromToken(r.Header.Get("authorization")); err != nil {
 		if r.Header.Get("authorization") != "" {
@@ -61,6 +62,16 @@ func createVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	//FIXME: validate org
+	/*if valid, vErrs := validateVideo(req, "create"); !valid {
+		write422(w, vErrs)
+		return
+	}*/
+	if err = decoder.Decode(&req); err != nil {
+		write400(w)
+		return
+	}
+
 	var isAuthorized bool
 	if isAuthorized, err = IsAuthorized(*userId, *req.OrganizationId, "CREATE_VIDEO"); err != nil {
 		write500(w)
@@ -70,18 +81,12 @@ func createVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	if err = decoder.Decode(&req); err != nil {
-		write400(w)
-		return
-	}
 
-	//FIXME: validate org
-	/*if valid, vErrs := validateVideo(req, "create"); !valid {
-		write422(w, vErrs)
-		return
-	}*/
 	newVideo, err := db.CreateVideo(*req.Title, *req.OrganizationId)
 	if err != nil {
+		log.Logger.WithFields(logrus.Fields{
+		"err": err,
+	}).Debug("Create Organization Failure")
 		write500(w)
 		return
 	}

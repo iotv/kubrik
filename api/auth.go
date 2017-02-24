@@ -261,6 +261,7 @@ func jwtKeyFunc(_ *jwt.Token) (interface{}, error) {
 }
 
 func GetUserIdFromToken(header string) (*string, error) {
+	//FIXME: sanity check that the user actually exists
 	var jwtT *jwt.Token
 	var err error
 	headerParts := strings.Split(header, " ")

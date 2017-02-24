@@ -7,6 +7,8 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/mg4tv/kubrik/db"
 	"github.com/jackc/pgx"
+	"github.com/mg4tv/kubrik/log"
+	"github.com/Sirupsen/logrus"
 )
 
 type organizationResponse struct {
@@ -53,6 +55,9 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}*/
 	newOrg, err := db.CreateOrganization(*req.Name, *userId, false)
 	if err != nil {
+		log.Logger.WithFields(logrus.Fields{
+			"err": err,
+		}).Debug("Create Organization Failure")
 		write500(w)
 		return
 	}
