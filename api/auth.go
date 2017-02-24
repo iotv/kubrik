@@ -100,13 +100,8 @@ func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	var encryptedPassword []byte
-	if user.EncryptedPassword != nil {
-		encryptedPassword = *user.EncryptedPassword
-	} else {
-		encryptedPassword = []byte{}
-	}
-	if err := bcrypt.CompareHashAndPassword(encryptedPassword, []byte(*req.Password)); err != nil {
+
+	if err := bcrypt.CompareHashAndPassword(user.EncryptedPassword, []byte(*req.Password)); err != nil {
 		write401(w, &[]errorStruct{
 			{
 				Error:  "Invalid Login/Password combination",

@@ -4,14 +4,14 @@ type UserModel struct {
 	Id                string
 	Username          *string
 	Email             string
-	EncryptedPassword *[]byte
+	EncryptedPassword []byte
 }
 
 
 // CreateUser takes a UserModel and writes it to the database.
 // If this write was successful, it returns a Usermodel as seen by the database and a nil error.
 // Otherwise, it returns a nil model and an errror
-func CreateUser(username *string, email string, encrpyted_password *[]byte) (*UserModel, error) {
+func CreateUser(username *string, email string, encrpyted_password []byte) (*UserModel, error) {
 	const qsIns = "INSERT INTO users(username, email, encrypted_password) VALUES($1, $2, $3) RETURNING id"
 	var err error
 
@@ -84,7 +84,7 @@ func GetUserById(id string) (*UserModel, error) {
 		Id:                id,
 		Username:          username,
 		Email:             email,
-		EncryptedPassword: &encrypted_password,
+		EncryptedPassword: encrypted_password,
 	}, nil
 }
 
@@ -98,7 +98,7 @@ func GetUserByEmail(email string) (*UserModel, error) {
 
 	var id string
 	var username *string
-	var encrypted_password *[]byte
+	var encrypted_password []byte
 	row := conn.QueryRow(qs, email)
 	err = row.Scan(&id, &username, &encrypted_password)
 	if err != nil {
@@ -122,7 +122,7 @@ func GetUserByUsername(username string) (*UserModel, error) {
 
 	var id string
 	var email string
-	var encrypted_password *[]byte
+	var encrypted_password []byte
 	row := conn.QueryRow(qs, username)
 	err = row.Scan(&id, &email, &encrypted_password)
 	if err != nil {

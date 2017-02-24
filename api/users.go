@@ -107,7 +107,7 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	newUser, err := db.CreateUser(req.Username, *req.Email, &hash)
+	newUser, err := db.CreateUser(req.Username, *req.Email, hash)
 	if err != nil {
 		if pgErr := err.(pgx.PgError); pgErr.Code == "23505" /*duplicate key violates unique constraint*/ {
 			write409(w, &[]errorStruct{
