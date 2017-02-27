@@ -8,3 +8,5 @@ import:
 - package: github.com/mattes/migrate
   version: ^1.3.0
 - package: github.com/meatballhat/negroni-logrus
+- package: github.com/gorilla/mux
+  version: ^1.3.0

@@ -1,10 +1,14 @@
-hash: 2a4623e65cad3ba58876337420c8af781f1d4977e9e108ee36f96665ea1881b3
-updated: 2017-01-06T22:49:59.53548367-05:00
+hash: 8766d3fb527bbb73b19a9d0c02d94a575be4939ad6c59f654ba058db5f5ab88c
+updated: 2017-02-26T23:55:46.956905749-05:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 9ed569b5d1ac936e6494082958d63a6aa4fff99a
 - name: github.com/fsnotify/fsnotify
   version: fd9ec7deca8bf46ecd2a795baaacf2b3a9be1197
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/hashicorp/hcl
   version: 80e628d796135357b3d2e33a985c666b9f35eee1
   subpackages:
@@ -20,8 +24,6 @@ imports:
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/jackc/pgx
   version: e96c105b55d469fddef56bfa7db5ecc7ab31d7b2
-- name: github.com/julienschmidt/httprouter
-  version: 5dd70ee059943e81987a817fa1a755b11dd119c1
 - name: github.com/lib/pq
   version: 8df6253d1317616f36b0c3740eb30c239a7372cb
   subpackages:
