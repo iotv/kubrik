@@ -1,13 +1,13 @@
 package api
 
 import (
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"encoding/json"
 	"github.com/mg4tv/kubrik/db"
 	"github.com/mg4tv/kubrik/log"
 	"github.com/jackc/pgx"
 	"github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
 )
 
 type videoResponse struct {
@@ -22,7 +22,7 @@ type videoRequest struct {
 	OrganizationId *string `json:"organization_id,omitempty"`
 }
 
-func listVideos(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func listVideos(w http.ResponseWriter, _ *http.Request) {
 	encoder := json.NewEncoder(w)
 
 	videos, err := db.ListVideos(20)
@@ -39,7 +39,7 @@ func listVideos(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	encoder.Encode(&videos)
 }
 
-func createVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func createVideo(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	decoder := json.NewDecoder(r.Body)
 
@@ -100,15 +100,18 @@ func createVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	})
 }
 
-func showVideo(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func showVideo(_ http.ResponseWriter, _ *http.Request) {
 }
 
-func RouteVideos(router *httprouter.Router) {
-	router.GET("/videos", listVideos)
-	router.POST("/videos", createVideo)
+func RouteVideos(router *mux.Router) {
+	sub := router.PathPrefix("/videos").Subrouter().StrictSlash(true)
+	sub.HandleFunc("/", listVideos).Methods("GET")
+	sub.Methods("GET").HandlerFunc(listVideos)
+	sub.HandleFunc("/", createVideo).Methods("POST")
+	sub.Methods("POST").HandlerFunc(createVideo)
 
 	//router.DELETE("/videos/:id", deleteVideo)
-	router.GET("/videos/:id", showVideo)
+	router.HandleFunc("/{id}", showVideo).Methods("GET")
 	//router.PATCH("/videos/:id", partiallyUpdateVideo)
 	//router.PUT("/videos/:id", updateVideo)
 }

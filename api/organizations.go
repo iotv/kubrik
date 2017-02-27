@@ -2,13 +2,13 @@ package api
 
 import (
 	"net/http"
-	"github.com/julienschmidt/httprouter"
 	"encoding/json"
 	"github.com/satori/go.uuid"
 	"github.com/mg4tv/kubrik/db"
 	"github.com/jackc/pgx"
 	"github.com/mg4tv/kubrik/log"
 	"github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
 )
 
 type organizationResponse struct {
@@ -21,7 +21,7 @@ type organizationRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func createOrganization(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	encoder := json.NewEncoder(w)
 
@@ -71,9 +71,16 @@ func createOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	})
 }
 
-func showOrganization(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func showOrganization(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-	rawId := p.ByName("id")
+	vars := mux.Vars(r)
+	rawId, ok := vars["id"]
+
+	if !ok {
+		//TODO: debatable 500
+		write400(w)
+		return
+	}
 	if _, err := uuid.FromString(rawId); err != nil {
 		write400(w)
 		return
@@ -97,9 +104,16 @@ func showOrganization(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	})
 }
 
-func showOrganizationByName(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func showOrganizationByName(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-	name := p.ByName("name")
+	vars := mux.Vars(r)
+	name, ok := vars["name"]
+
+	if !ok {
+		//TODO: debatable 500
+		write400(w)
+		return
+	}
 
 	org, err := db.GetOrganizationByName(name)
 	if err == pgx.ErrNoRows {
@@ -123,14 +137,17 @@ func IsAuthorized(userId, organizationId, permission string) (bool, error) {
 	return true, nil
 }
 
-func RouteOrganization(router *httprouter.Router) {
+func RouteOrganization(router *mux.Router) {
+	sub := router.PathPrefix("/organizations").Subrouter().StrictSlash(true)
+
 	//router.GET("/organizations", listOrganizations)
-	router.POST("/organizations", createOrganization)
+	sub.Methods("POST").HandlerFunc(createOrganization)
+	sub.HandleFunc("/", createOrganization).Methods("POST")
 
 	//router.DELETE("/organizations/:id", deleteOrganization)
-	router.GET("/organizations/:id", showOrganization)
+	sub.HandleFunc("/{id}", showOrganization).Methods("GET")
 	//router.PATCH("/organizations/:id", partiallyUpdateOrganization)
 	//router.PUT("/organizations/:id", updateOrganization)
 
-	router.GET("/organizationsByName/:name", showOrganizationByName)
+	router.HandleFunc("/organizationsByName/{name}", showOrganizationByName).Methods("GET")
 }

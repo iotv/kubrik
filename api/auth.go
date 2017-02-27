@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
@@ -14,6 +13,7 @@ import (
 	"github.com/satori/go.uuid"
 	"strings"
 	"io/ioutil"
+	"github.com/gorilla/mux"
 )
 
 type serverFacebookTokenResponse struct {
@@ -56,7 +56,7 @@ type jwtClaims struct {
 // 401 Unauthenticated: The credentials provided don't match a known user credential
 // 422 Unprocessable Entity: The decoded JSON doesn't meet validation standards
 // 500 Server Error:
-func login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func login(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	encoder := json.NewEncoder(w)
 
@@ -167,7 +167,7 @@ func convertFacebookCodeToToken(request clientFacebookTokenRequest) (*serverFace
 	return &fbResp, nil
 }
 
-func loginOrSignUpWithFacebook(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func loginOrSignUpWithFacebook(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	encoder := json.NewEncoder(w)
 
@@ -250,10 +250,10 @@ func getFacebookUserAttributes(accessToken string) (*serverFacebookUserAttribute
 	return &fbResp, nil
 }
 
-func deauthFacebook(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func deauthFacebook(_ http.ResponseWriter, _ *http.Request) {
 }
 
-func convertGoogleToken(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func convertGoogleToken(_ http.ResponseWriter, _ *http.Request) {
 }
 
 func jwtKeyFunc(_ *jwt.Token) (interface{}, error) {
@@ -283,9 +283,9 @@ func GetUserIdFromToken(header string) (*string, error) {
 	return nil, errors.New("Invalid JWT")
 }
 
-func RouteAuth(router *httprouter.Router) {
-	router.POST("/auth/login", login)
-	router.POST("/auth/facebook", loginOrSignUpWithFacebook)
-	router.POST("/auth/google", convertGoogleToken)
-	router.POST("/deauth/facebook", deauthFacebook)
+func RouteAuth(router *mux.Router) {
+	router.HandleFunc("/auth/login", login).Methods("POST")
+	router.HandleFunc("/auth/facebook", loginOrSignUpWithFacebook).Methods("POST")
+	router.HandleFunc("/auth/google", convertGoogleToken).Methods("POST")
+	router.HandleFunc("/deauth/facebook", deauthFacebook).Methods("POST")
 }

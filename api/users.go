@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/mg4tv/kubrik/db"
@@ -11,6 +10,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/mg4tv/kubrik/log"
 	"github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
 )
 
 type userResponse struct {
@@ -83,7 +83,7 @@ func validateUser(u userRequest, act string) (bool, *[]errorStruct) {
 // createUser is an httprouter handler function which responds to POST requests for users
 // It performs the CRUD create operation in a RESTful manner by validating the request
 // and writing the user to the database
-func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func createUser(w http.ResponseWriter, r *http.Request) {
 	// TODO: pull these from a pool
 	decoder := json.NewDecoder(r.Body)
 	encoder := json.NewEncoder(w)
@@ -172,18 +172,25 @@ func createUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	})
 }
 
-func deleteUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func deleteUser(_ http.ResponseWriter, _ *http.Request) {
 }
 
-func listUsers(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func listUsers(_ http.ResponseWriter, _ *http.Request) {
 }
 
-func partiallyUpdateUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func partiallyUpdateUser(_ http.ResponseWriter, _ *http.Request) {
 }
 
-func showUser(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
+func showUser(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-	rawId := p.ByName("id")
+	vars := mux.Vars(r)
+	rawId, ok := vars["id"]
+
+	if !ok {
+		//TODO: debatable 500
+		write400(w)
+		return
+	}
 	if _, err := uuid.FromString(rawId); err != nil {
 		write400(w)
 		return
@@ -210,9 +217,16 @@ func showUser(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
 	})
 }
 
-func showUserByUsername(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
+func showUserByUsername(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-	username := p.ByName("username")
+	vars := mux.Vars(r)
+	username, ok := vars["username"]
+
+	if !ok {
+		//TODO: debatable 500
+		write400(w)
+		return
+	}
 
 	user, err := db.GetUserByUsername(username)
 	if err == pgx.ErrNoRows {
@@ -232,18 +246,21 @@ func showUserByUsername(w http.ResponseWriter, _ *http.Request, p httprouter.Par
 	})
 }
 
-func updateUser(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func updateUser(_ http.ResponseWriter, _ *http.Request) {
 }
 
-func RouteUser(router *httprouter.Router) {
-	router.GET("/users", listUsers)
-	router.POST("/users", createUser)
+func RouteUser(router *mux.Router) {
+	sub := router.PathPrefix("/users").Subrouter().StrictSlash(true)
+	sub.Methods("GET").HandlerFunc(listUsers)
+	sub.HandleFunc("/", listUsers).Methods("GET")
+	sub.Methods("POST").HandlerFunc(createUser)
+	sub.HandleFunc("/", createUser).Methods("POST")
 
-	router.DELETE("/users/:id", deleteUser)
-	router.GET("/users/:id", showUser)
-	router.PATCH("/users/:id", partiallyUpdateUser)
-	router.PUT("/users/:id", updateUser)
+	sub.HandleFunc("/{id}", deleteUser).Methods("DELETE")
+	sub.HandleFunc("/{id}", showUser).Methods("GET")
+	sub.HandleFunc("/{id}", partiallyUpdateUser).Methods("PATCH")
+	sub.HandleFunc("/{id}", updateUser).Methods("PUT")
 
-	router.GET("/userByUsername/:username", showUserByUsername)
+	router.HandleFunc("/userByUsername/:username", showUserByUsername).Methods("GET")
 	//router.GET("/usersByEmail/:email", showUserByEmail)
 }

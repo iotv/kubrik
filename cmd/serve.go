@@ -4,11 +4,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/rs/cors"
-	"github.com/julienschmidt/httprouter"
 	"github.com/mg4tv/kubrik/api"
 	"github.com/urfave/negroni"
 	"github.com/meatballhat/negroni-logrus"
 	"github.com/mg4tv/kubrik/log"
+	"github.com/gorilla/mux"
 )
 
 var ServeCmd = &cobra.Command{
@@ -33,7 +33,7 @@ func init() {
 
 func serve(cmd *cobra.Command, args []string) {
 	corsMiddleware := cors.Default()
-	router := httprouter.New()
+	router := mux.NewRouter()
 
 	// Initiate subroutes
 	api.RouteAuth(router)
