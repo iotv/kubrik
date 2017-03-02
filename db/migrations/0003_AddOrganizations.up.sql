@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS organization_group_permission_types (
 
 
 CREATE TABLE IF NOT EXISTS organization_group_permissions (
-  if                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   group_id           UUID REFERENCES organization_groups (id) ON DELETE CASCADE                 NOT NULL,
   permission_type_id UUID REFERENCES organization_group_permission_types (id) ON DELETE CASCADE NOT NULL,
   UNIQUE (group_id, permission_type_id)

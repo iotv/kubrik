@@ -11,14 +11,28 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type groupResponse struct {
+	Name        string   `json:"name"`
+	Permissions []string `json:"permissions"`
+}
+
 type organizationResponse struct {
-	Id      string `json:"id"`
-	Name    string `json:"name"`
-	OwnerId string `json:"owner_id"`
+	Id      string          `json:"id"`
+	Name    string          `json:"name"`
+	OwnerId string          `json:"owner_id"`
+	Groups  []groupResponse `json:"groups`
+}
+
+type groupRequest struct {
+	Name        *string   `json:"name,omitempty"`
+	IsPublic    *bool     `json:"is_public,omitempty"`
+	Permissions *[]string `json:"permissions,omitempty"`
 }
 
 type organizationRequest struct {
-	Name *string `json:"name,omitempty"`
+	Name    *string       `json:"name,omitempty"`
+	OwnerId *string       `json:"name,omitempty"`
+	Groups  *groupRequest `json:"groups,omitempty"`
 }
 
 func createOrganization(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +115,7 @@ func showOrganization(w http.ResponseWriter, r *http.Request) {
 		Id:      org.Id,
 		Name:    org.Name,
 		OwnerId: org.OwnerId,
+		Groups:  []groupResponse{},
 	})
 }
 
@@ -138,16 +153,29 @@ func IsAuthorized(userId, organizationId, permission string) (bool, error) {
 }
 
 func RouteOrganization(router *mux.Router) {
-	sub := router.PathPrefix("/organizations").Subrouter().StrictSlash(true)
+	orgRouter := router.PathPrefix("/organizations").Subrouter().StrictSlash(true)
 
-	//router.GET("/organizations", listOrganizations)
-	sub.Methods("POST").HandlerFunc(createOrganization)
-	sub.HandleFunc("/", createOrganization).Methods("POST")
+	// Root paths
+	//orgRouter.Methods("GET").HandlerFunc(listOrganizations)
+	//orgRouter.HandleFunc("/", listOrganizations).Methods("GET")
+	orgRouter.Methods("POST").HandlerFunc(createOrganization)
+	orgRouter.HandleFunc("/", createOrganization).Methods("POST")
 
-	//router.DELETE("/organizations/:id", deleteOrganization)
-	sub.HandleFunc("/{id}", showOrganization).Methods("GET")
-	//router.PATCH("/organizations/:id", partiallyUpdateOrganization)
-	//router.PUT("/organizations/:id", updateOrganization)
+	// By Id Paths
+	//orgRouter.HandleFunc("/{id}", deleteOrganization).Methods("DELETE")
+	orgRouter.HandleFunc("/{id}", showOrganization).Methods("GET")
+	//orgRouter.HandlerFunc("/{id}", partiallyUpdateOrganization).Methods("PATCH")
+	//orgRouter.HandlerFunc("/{id}", updateOrganization).Methods("PUT")
 
-	router.HandleFunc("/organizationsByName/{name}", showOrganizationByName).Methods("GET")
+	// By Name Paths
+
+	// Groups subroutes
+	//orgRouter.HandleFunc("/{orgId}/groups", listOrganizationGroups).Methods("GET")
+	//orgRouter.HandleFunc("/{orgId}/groups", createOrganizationGroup).Methods("POST")
+	//orgRouter.HandleFunc("/{orgId}/groups/{groupId}", showOrganizationGroup).Methods("GET")
+	//orgRouter.HandleFunc("/{orgId}/groups/{groupId}", deleteOrganizationGroup).Methods("DELETE")
+	//orgRouter.HandleFunc("/{orgId}/groups/{groupId}", partiallyUpdateOrganizationGroup).Methods("PATCH")
+	//orgRouter.HandleFunc("/{orgId}/groups/{groupId}", updateOrganizationGroup).Methods("PUT")
+
+	router.HandleFunc("/orgsByName/{name}", showOrganizationByName).Methods("GET")
 }
