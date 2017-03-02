@@ -12,8 +12,15 @@ import (
 )
 
 type groupResponse struct {
+	Id          string   `json:"id"`
 	Name        string   `json:"name"`
-	Permissions []string `json:"permissions"`
+	Permissions []permissionResponse `json:"permissions"`
+}
+
+type permissionResponse struct {
+	Id     string `json:"id"`
+	TypeId string `json:"type_id"`
+	Name   string `json:"name"`
 }
 
 type organizationResponse struct {
@@ -109,14 +116,32 @@ func showOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	addContentTypeJSONHeader(w)
-	w.WriteHeader(http.StatusOK)
-	encoder.Encode(&organizationResponse{
+	resp := organizationResponse{
 		Id:      org.Id,
 		Name:    org.Name,
 		OwnerId: org.OwnerId,
 		Groups:  []groupResponse{},
-	})
+	}
+
+	for _, group := range org.Groups {
+		gResp := groupResponse{
+			Id:          group.Id,
+			Name:        group.Name,
+			Permissions: []permissionResponse{},
+		}
+		for _, permission := range group.Permissions {
+			gResp.Permissions = append(gResp.Permissions, permissionResponse{
+				Id:     permission.Id,
+				TypeId: permission.PermissionTypeId,
+				Name:   permission.PermissionTypeName,
+			})
+		}
+		resp.Groups = append(resp.Groups, gResp)
+	}
+
+	addContentTypeJSONHeader(w)
+	w.WriteHeader(http.StatusOK)
+	encoder.Encode(&resp)
 }
 
 func showOrganizationByName(w http.ResponseWriter, r *http.Request) {
