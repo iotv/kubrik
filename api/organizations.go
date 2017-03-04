@@ -27,7 +27,7 @@ type organizationResponse struct {
 	Id      string          `json:"id"`
 	Name    string          `json:"name"`
 	OwnerId string          `json:"owner_id"`
-	Groups  []groupResponse `json:"groups`
+	Groups  []groupResponse `json:"groups"`
 }
 
 type groupRequest struct {

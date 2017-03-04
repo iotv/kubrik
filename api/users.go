@@ -261,6 +261,6 @@ func RouteUser(router *mux.Router) {
 	sub.HandleFunc("/{id}", partiallyUpdateUser).Methods("PATCH")
 	sub.HandleFunc("/{id}", updateUser).Methods("PUT")
 
-	router.HandleFunc("/userByUsername/:username", showUserByUsername).Methods("GET")
+	router.HandleFunc("/userByUsername/{username}", showUserByUsername).Methods("GET")
 	//router.GET("/usersByEmail/:email", showUserByEmail)
 }
