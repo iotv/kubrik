@@ -1,6 +1,10 @@
 language: go
 go:
   - 1.8
+env:
+  - GOOS=linux
+  - GOOS=windows
+  - GOOS=darwin
 install: true
 script:
   - go build github.com/mg4tv/kubrik
