@@ -8,12 +8,17 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
+	"github.com/satori/go.uuid"
 )
 
 type videoResponse struct {
-	Id             string `json:"id"`
-	Title          string `json:"name"`
-	OrganizationId string `json:"owner_id"`
+	Id             string                 `json:"id"`
+	Title          string                 `json:"name"`
+	OrganizationId string                 `json:"owner_id"`
+	VideoSegments  []videoSegmentResponse `json:"video_segments"`
+}
+
+type videoSegmentResponse struct {
 }
 
 type videoRequest struct {
@@ -47,7 +52,6 @@ func createVideo(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var userId *string
 
-
 	if userId, err = GetUserIdFromToken(r.Header.Get("authorization")); err != nil {
 		if r.Header.Get("authorization") != "" {
 			write403(w)
@@ -62,7 +66,7 @@ func createVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//FIXME: validate org
+	//FIXME: validate video
 	/*if valid, vErrs := validateVideo(req, "create"); !valid {
 		write422(w, vErrs)
 		return
@@ -81,12 +85,11 @@ func createVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	newVideo, err := db.CreateVideo(*req.Title, *req.OrganizationId)
 	if err != nil {
 		log.Logger.WithFields(logrus.Fields{
-		"err": err,
-	}).Debug("Create Organization Failure")
+			"err": err,
+		}).Debug("Create Organization Failure")
 		write500(w)
 		return
 	}
@@ -100,7 +103,41 @@ func createVideo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func showVideo(_ http.ResponseWriter, _ *http.Request) {
+func showVideo(w http.ResponseWriter, r *http.Request) {
+	encoder := json.NewEncoder(w)
+	vars := mux.Vars(r)
+	rawId, ok := vars["id"]
+
+	if !ok {
+		//TODO: debatable 500
+		write400(w)
+		return
+	}
+	if _, err := uuid.FromString(rawId); err != nil {
+		write400(w)
+		return
+	}
+
+	video, err := db.GetVideoById(rawId)
+	if err == pgx.ErrNoRows {
+		write404(w)
+		return
+	} else if err != nil {
+		write500(w)
+		return
+	}
+
+	// FIXME: add video segments
+	resp := videoResponse{
+		Id: video.Id,
+		Title: video.Title,
+		OrganizationId: video.OrganizationId,
+		VideoSegments: []videoSegmentResponse{},
+	}
+
+	addContentTypeJSONHeader(w)
+	w.WriteHeader(http.StatusOK)
+	encoder.Encode(&resp)
 }
 
 func RouteVideos(router *mux.Router) {
